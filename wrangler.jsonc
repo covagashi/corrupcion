@@ -1,0 +1,22 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "corrupcion",
+	"compatibility_date": "2026-06-12",
+	"compatibility_flags": ["nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": true,
+	"preview_urls": true
+	// D1 database for contracts + precomputed irregularity metrics.
+	// To activate: `npx wrangler d1 create corrupcion-db`, then uncomment and paste the database_id.
+	// "d1_databases": [
+	// 	{
+	// 		"binding": "DB",
+	// 		"database_name": "corrupcion-db",
+	// 		"database_id": "<paste-id-from-wrangler-d1-create>"
+	// 	}
+	// ]
+}
