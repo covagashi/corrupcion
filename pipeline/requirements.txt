@@ -1,2 +1,2 @@
+# fetch.py downloads the raw datasets; transform.py is pure stdlib.
 httpx>=0.27
-duckdb>=1.1

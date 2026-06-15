@@ -28,21 +28,24 @@ Heavy work happens offline in CI; the Worker only reads precomputed rows. The ca
 
 Smallest, richest, highest-impact dataset (9,855 records, 16 MB). Goal: one real page live.
 
-- [ ] `pipeline/` (Python): download Flood Control JSON
+- [x] `pipeline/fetch.py`: download Flood Control JSON
       (`https://raw.githubusercontent.com/bettergovph/bettergov/refs/heads/main/src/data/flood_control/flood_control.json`)
-- [ ] Parse the ArcGIS feature format; extract the useful fields:
-      `Contractor, ABC, ContractCost, Region, Province, Municipality, LegislativeDistrict,
-      ProjectDescription, InfraYear, Latitude, Longitude, ContractID`
-- [ ] Compute first irregularity signals:
-  - [ ] **bid-to-ceiling ratio** = `ContractCost / ABC` — flag when ≥ ~0.99 (winning bid suspiciously
-        close to the secret ceiling)
-  - [ ] **supplier concentration** — share of contracts/value won by a single contractor per
-        LegislativeDistrict / DistrictEngineeringOffice
-- [ ] Output a SQLite file or `.sql` dump
-- [ ] D1: create db (`wrangler d1 create corrupcion-db`), define schema, load it
-      (uncomment the `d1_databases` block in `wrangler.jsonc`, then `npm run gen`)
-- [ ] UI: contract list page (mobile-first) with a plain-language risk flag per contract
-- [ ] UI: contract detail page explaining each flag in one sentence
+- [x] `pipeline/transform.py`: parse the ArcGIS feature format; extract the useful fields.
+      Note: `GlobalID` is the primary key (`ContractID` is not unique — 9,698/9,855).
+- [x] Compute first irregularity signals (in `transform.py`):
+  - [x] **bid-to-ceiling ratio** = `ContractCost / ABC`. A flat ≥0.99 flag is useless here — 73% of
+        the dataset sits at the ceiling, so it's the norm, not a signal. Layered instead:
+        `OVER_CEILING` (>1.0, awarded above the legal ceiling — 770 rows, the strong signal),
+        `EXACT_CEILING` (≥0.9999), `NEAR_CEILING` (≥0.99, context only).
+  - [x] **supplier concentration** — `DISTRICT_DOMINANCE`: one contractor holds ≥50% of a
+        legislative district's contract value across ≥3 contracts (21 pairs / 270 contracts).
+- [x] Output a `.sql` dump (`pipeline/out/contracts.sql`, batched 50 rows/INSERT for D1's
+      statement-length limit). `risk_score` (0–100) is the transparent sum of fired-flag weights.
+- [x] D1: schema defined (`db/schema.sql`), binding activated in `wrangler.jsonc`, loaded into the
+      **local** D1 (`wrangler d1 execute --local`). Remote `wrangler d1 create` + real `database_id`
+      still pending (needs `wrangler login`).
+- [x] UI: contract list page (mobile-first) — riskiest first, search, plain-language flag per row
+- [x] UI: contract detail page explaining each flag in one sentence + the money + district standing
 
 ## Phase 2 — Automate the refresh
 

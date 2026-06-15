@@ -9,14 +9,15 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": true,
 	// D1 database for contracts + precomputed irregularity metrics.
-	// To activate: `npx wrangler d1 create corrupcion-db`, then uncomment and paste the database_id.
-	// "d1_databases": [
-	// 	{
-	// 		"binding": "DB",
-	// 		"database_name": "corrupcion-db",
-	// 		"database_id": "<paste-id-from-wrangler-d1-create>"
-	// 	}
-	// ]
+	// Local dev works as-is (`wrangler dev` / `--local` use a SQLite file under .wrangler/).
+	// For remote/deploy: `npx wrangler d1 create corrupcion-db`, then paste the real database_id below.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "corrupcion-db",
+			"database_id": "local-placeholder-replace-after-d1-create"
+		}
+	]
 }

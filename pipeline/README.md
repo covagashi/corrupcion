@@ -10,13 +10,13 @@ Output is precomputed rows; the Worker only reads them. See [../docs/ROADMAP.md]
 
 ## Layout
 
-| Path | Purpose |
-|---|---|
-| `fetch.py` | Download raw datasets into `sources/` (discovers URLs via the BetterGov catalog API) |
-| `transform.py` | Parse raw data, compute the irregularity metric, write `out/contracts.sql` |
-| `sources/` | Raw downloaded data — gitignored |
-| `out/` | Generated SQL / SQLite for D1 import — gitignored |
-| `../db/schema.sql` | D1 table definitions |
+| Path               | Purpose                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| `fetch.py`         | Download raw datasets into `sources/` (discovers URLs via the BetterGov catalog API) |
+| `transform.py`     | Parse raw data, compute the irregularity metric, write `out/contracts.sql`           |
+| `sources/`         | Raw downloaded data — gitignored                                                     |
+| `out/`             | Generated SQL / SQLite for D1 import — gitignored                                    |
+| `../db/schema.sql` | D1 table definitions                                                                 |
 
 ## Run locally
 
@@ -41,5 +41,6 @@ npx wrangler d1 execute corrupcion-db --file=out/contracts.sql
 DistrictEngineeringOffice, ProjectDescription, InfraYear, Latitude, Longitude, ContractID`.
 
 Metric signals computed in `transform.py`:
+
 - **bid-to-ceiling ratio** = `ContractCost / ABC` — flag when ≥ ~0.99
 - **supplier concentration** — a contractor's share of contract value per legislative district
