@@ -78,8 +78,9 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 
 ## Phase 5 — Polish
 
-- [ ] Public methodology page (how each flag is computed — keep it transparent/auditable).
-      Source content already drafted in [methodology.md](methodology.md).
+- [x] Public methodology page (`/methodology`, plain-language, linked from every footer; flag
+      definitions rendered from the same `$lib/flags` source the app uses). Dev-facing spec in
+      [methodology.md](methodology.md).
 - [ ] Map view of flagged projects (lat/long already in the data)
 - [ ] Performance pass for low-end mobile (payload size, no heavy JS)
 
