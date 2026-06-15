@@ -58,7 +58,9 @@ Smallest, richest, highest-impact dataset (9,855 records, 16 MB). Goal: one real
 - [ ] PhilGEPS (`philgeps.parquet`, ~493 MB — all agencies) into the pipeline
 - [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`, ~21 MB)
 - [ ] Adapt the metric: add legal threshold-splitting detection (amounts clustered just below
-      RA 9184 / RA 12009 procurement thresholds — verify current threshold values before hardcoding)
+      RA 9184 / RA 12009 procurement thresholds — verify current threshold values before hardcoding).
+      Full statistic (observed vs expected under a smooth tail, excess count/value) specified in
+      [methodology.md](methodology.md#phase-3--threshold-splitting-planned-not-yet-implemented).
 - [ ] Unified search across all contracts (server-side, returns small HTML)
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
@@ -70,7 +72,8 @@ Smallest, richest, highest-impact dataset (9,855 records, 16 MB). Goal: one real
 
 ## Phase 5 — Polish
 
-- [ ] Public methodology page (how each flag is computed — keep it transparent/auditable)
+- [ ] Public methodology page (how each flag is computed — keep it transparent/auditable).
+      Source content already drafted in [methodology.md](methodology.md).
 - [ ] Map view of flagged projects (lat/long already in the data)
 - [ ] Performance pass for low-end mobile (payload size, no heavy JS)
 
