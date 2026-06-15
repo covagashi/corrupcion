@@ -23,12 +23,27 @@ only serves precomputed results.
 
 ```sh
 npm install
-npm run dev      # dev server
-npm run check    # types
+
+# build the data: download the dataset, compute the metric, load a local D1
+python pipeline/fetch.py
+python pipeline/transform.py
+npx wrangler d1 execute corrupcion-db --local --file=db/schema.sql --yes
+npx wrangler d1 execute corrupcion-db --local --file=pipeline/out/contracts.sql --yes
+
+npm run dev      # dev server (reads the local D1)
+npm run check    # types  (run `npm run gen` first if it complains about types)
 npm run lint     # prettier + eslint
 ```
 
-Deploy: `npm run build && npx wrangler deploy` (requires a Cloudflare account).
+The pipeline is documented in [pipeline/README.md](pipeline/README.md); how each flag is computed,
+in [docs/methodology.md](docs/methodology.md) (and on the site's own `/methodology` page).
+
+## Deploy
+
+The whole thing — pipeline, D1 load, and deploy — runs in CI on a monthly cron and a manual button
+(`.github/workflows/refresh.yml`), so no local Node is needed. See
+[docs/deploy.md](docs/deploy.md) for the one-time setup (create the D1 database, add two repo
+secrets) and the local-deploy alternative.
 
 ## Data sources
 
@@ -37,5 +52,7 @@ See [docs/data-sources.md](docs/data-sources.md). Built on the open-data work of
 
 ## Status
 
-Early scaffold — data pipeline and UI are under construction.
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the step-by-step plan.
+**Live end to end on the Flood Control dataset** (9,855 contracts): pipeline → irregularity metric →
+D1 → mobile-first list, contract detail, and public methodology pages. Automated refresh + deploy
+wired in CI. Next: the larger national datasets (PhilGEPS, DPWH) and contract↔politician↔owner
+alignment. Full plan in [docs/ROADMAP.md](docs/ROADMAP.md).

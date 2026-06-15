@@ -17,14 +17,20 @@ SvelteKit (Svelte 5) + TypeScript + Tailwind 4, deployed to **Cloudflare Workers
 - `npm run lint` / `npm run format` — Prettier + ESLint.
 - `npm run gen` — regenerate `worker-configuration.d.ts`. **Required after every `wrangler.jsonc`
   edit**, otherwise `build` and `check` fail with "types out of date".
-- Deploy: `npm run build && npx wrangler deploy` (needs `wrangler login`).
-- D1 database binding (`DB`) is stubbed out in `wrangler.jsonc` — see comment there to activate.
+- Deploy: see @docs/deploy.md (local with `wrangler login`, or hands-off via the CI workflow).
+- D1 binding (`DB`) is active in `wrangler.jsonc` with a placeholder `database_id` — replace it with
+  the real id after `wrangler d1 create` (or from the dashboard) to deploy. Local dev works as-is.
+- **Run `npm run gen` right before `npm run check`/`npm run build`** — `wrangler types --check`
+  otherwise reports a spurious "types out of date".
 
 ## Architecture decisions
 
-- **All heavy data work happens offline**, in a future `pipeline/` (Python), which downloads bulk
-  datasets, computes the irregularity metrics, and loads results into D1. The Worker only reads
-  precomputed rows — never compute metrics or fetch government APIs at request time.
+- **All heavy data work happens offline**, in `pipeline/` (Python): `fetch.py` downloads bulk
+  datasets, `transform.py` computes the irregularity metric and writes `out/contracts.sql`, which is
+  loaded into D1 (`db/schema.sql` defines the tables). The Worker only reads precomputed rows —
+  never compute metrics or fetch government APIs at request time. Server-side D1 access lives in
+  `src/lib/server/contracts.ts`; flag definitions in `src/lib/flags.ts` feed both the UI and the
+  public `/methodology` page. Metric details: @docs/methodology.md.
 - Data sources, endpoints, and bulk datasets are documented in @docs/data-sources.md.
 - The DPWH live API is behind Cloudflare bot protection; plain `fetch` gets blocked. Use the bulk
   Hugging Face datasets instead (see data-sources doc).
