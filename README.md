@@ -38,3 +38,4 @@ See [docs/data-sources.md](docs/data-sources.md). Built on the open-data work of
 ## Status
 
 Early scaffold — data pipeline and UI are under construction.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the step-by-step plan.
