@@ -49,9 +49,15 @@ Smallest, richest, highest-impact dataset (9,855 records, 16 MB). Goal: one real
 
 ## Phase 2 — Automate the refresh
 
-- [ ] GitHub Actions workflow: run the pipeline on a monthly cron + manual dispatch
-- [ ] Step to load results into D1 via `wrangler d1 import` (store `CLOUDFLARE_API_TOKEN` as a repo secret)
-- [ ] Deploy the site (`wrangler deploy`)
+Full deploy instructions (local + CI) in [deploy.md](deploy.md).
+
+- [x] GitHub Actions workflow: pipeline → load D1 → deploy, on a monthly cron + manual dispatch
+      (`.github/workflows/refresh.yml`)
+- [x] Step to load results into D1 via `wrangler d1 execute --remote` (idempotent schema + rows)
+- [x] Deploy the site (`wrangler deploy`) — wired in the workflow
+- [ ] **Manual one-time setup (you):** create the D1 db, paste its `database_id` into
+      `wrangler.jsonc`, add repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`,
+      then run the workflow once. See [deploy.md](deploy.md).
 
 ## Phase 3 — Add the big contract datasets
 
