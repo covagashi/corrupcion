@@ -1,0 +1,8 @@
+# Raw downloads and generated output — never committed
+sources/
+out/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
