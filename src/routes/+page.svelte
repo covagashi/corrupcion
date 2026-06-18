@@ -11,6 +11,7 @@
 		const parts: string[] = [];
 		if (data.flaggedOnly) parts.push('all=1'); // currently flagged-only -> link shows all
 		if (data.search) parts.push(`q=${encodeURIComponent(data.search)}`);
+		if (data.source) parts.push(`source=${data.source}`);
 		const qs = parts.join('&');
 		return resolve(qs ? `/?${qs}` : '/');
 	});
@@ -34,7 +35,7 @@
 		</p>
 	</header>
 
-	<form method="GET" class="mb-4 flex gap-2">
+	<form method="GET" class="mb-4 flex flex-wrap gap-2">
 		<input
 			type="search"
 			name="q"
@@ -43,6 +44,16 @@
 			class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
 		/>
 		{#if !data.flaggedOnly}<input type="hidden" name="all" value="1" />{/if}
+		<select
+			name="source"
+			value={data.source ?? ''}
+			class="rounded-lg border border-slate-300 px-2 py-2 text-sm text-slate-700"
+			aria-label="Filter by data source"
+		>
+			<option value="">All sources</option>
+			<option value="flood_control">Flood Control</option>
+			<option value="philgeps">PhilGEPS</option>
+		</select>
 		<button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>
 	</form>
 
@@ -110,6 +121,10 @@
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Source: DPWH Flood Control Projects (via BetterGov). Flags are simple, auditable statistics —
 		they indicate patterns worth reviewing, not proof of wrongdoing.
-		<a href={resolve('/methodology')} class="text-blue-700 underline">How we flag contracts</a>.
+		<a href={resolve('/methodology')} class="text-blue-700 underline">How we flag contracts</a>
+		·
+		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
+			>Below-threshold pricing</a
+		>.
 	</footer>
 </main>

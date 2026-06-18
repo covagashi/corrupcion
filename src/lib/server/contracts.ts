@@ -23,6 +23,9 @@ export interface ContractRow {
 	bid_to_ceiling_ratio: number | null;
 	risk_flags: string | null;
 	risk_score: number;
+	award_date: number | null;
+	category: string | null;
+	procuring_entity: string | null;
 }
 
 export interface ContractorDistrictStat {
@@ -58,7 +61,12 @@ export interface ListResult {
 /** Riskiest-first list, optionally filtered by a free-text query and a minimum score. */
 export async function listContracts(
 	platform: App.Platform | undefined,
-	opts: { search?: string; flaggedOnly?: boolean; limit?: number }
+	opts: {
+		search?: string;
+		flaggedOnly?: boolean;
+		limit?: number;
+		source?: 'flood_control' | 'philgeps';
+	}
 ): Promise<ListResult> {
 	const limit = Math.min(opts.limit ?? 50, 100);
 	const where: string[] = [];
@@ -66,8 +74,14 @@ export async function listContracts(
 
 	if (opts.flaggedOnly) where.push('risk_score > 0');
 	if (opts.search) {
-		where.push('(contractor LIKE ?1 OR description LIKE ?1 OR legislative_district LIKE ?1)');
+		where.push(
+			`(contractor LIKE ?${binds.length + 1} OR description LIKE ?${binds.length + 1} OR legislative_district LIKE ?${binds.length + 1})`
+		);
 		binds.push(`%${opts.search}%`);
+	}
+	if (opts.source) {
+		where.push(`source = ?${binds.length + 1}`);
+		binds.push(opts.source);
 	}
 	const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
@@ -135,4 +149,24 @@ export async function getTotals(platform: App.Platform | undefined): Promise<Tot
 		flagged: row?.flagged ?? 0,
 		totalValue: row?.totalValue ?? 0
 	};
+}
+
+export interface ThresholdYear {
+	year: number;
+	observed_count: number;
+	observed_value: number;
+	expected_count: number | null;
+	expected_value: number | null;
+	excess_count: number | null;
+	excess_value: number | null;
+	minor_total: number;
+}
+
+export async function getThresholdSplitting(
+	platform: App.Platform | undefined
+): Promise<ThresholdYear[]> {
+	const res = await db(platform)
+		.prepare('SELECT * FROM threshold_splitting_yearly ORDER BY year ASC')
+		.all<ThresholdYear>();
+	return res.results ?? [];
 }

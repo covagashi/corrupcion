@@ -113,6 +113,10 @@
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Flags are simple, auditable statistics — they indicate patterns worth reviewing, not proof of
 		wrongdoing.
-		<a href={resolve('/methodology')} class="text-blue-700 underline">How we flag contracts</a>.
+		<a href={resolve('/methodology')} class="text-blue-700 underline">How we flag contracts</a>
+		·
+		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
+			>Below-threshold pricing</a
+		>.
 	</footer>
 </main>

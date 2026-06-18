@@ -64,18 +64,26 @@
 	</section>
 
 	<section class="mt-6">
-		<h2 class="text-base font-semibold text-slate-900">What's coming next</h2>
+		<h2 class="text-base font-semibold text-slate-900">Threshold-splitting</h2>
 		<p class="mt-2 text-sm text-slate-600">
-			As we add the larger national procurement datasets, we'll also watch for
-			<strong>threshold-splitting</strong>: contracts priced just under a legal limit that would
-			otherwise force open competition. We'll compare how many contracts cluster right below the
-			limit against how many you'd expect normally, and report the excess — again, as an indicator,
-			not a verdict.
+			Across the national PhilGEPS procurement data we also watch for
+			<strong>threshold-splitting</strong>: contracts priced just under the legal limit (₱1,000,000
+			under RA 9184; ₱2,000,000 from 2025 under RA 12009) above which open competitive bidding
+			becomes mandatory. We compare how many contracts cluster right below the limit against how
+			many a normal price spread would predict, and report the excess — an indicator, not a verdict.
+			Contracts inside that band carry the <em>"priced just below the bidding threshold"</em>
+			flag.
+			<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
+				>See the year-by-year excess.</a
+			>
 		</p>
 	</section>
 
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
-		Source: DPWH Flood Control Projects (via BetterGov). Our methodology is public and adapts the
-		approach of contractes.cat to Philippine data.
+		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts (via BetterGov). Our
+		methodology is public and adapts the approach of contractes.cat to Philippine data.
+		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
+			>Below-threshold pricing</a
+		>.
 	</footer>
 </main>
