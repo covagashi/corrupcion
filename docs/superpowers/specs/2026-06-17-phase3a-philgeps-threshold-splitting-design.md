@@ -31,13 +31,13 @@ Explicitly **out of scope** (other Phase 3 / Phase 4 pieces):
 
 Hugging Face `bettergovph/philgeps-data` (CC0, public). File inventory:
 
-| File                         |      Size | Use                                          |
-| ---------------------------- | --------: | -------------------------------------------- |
-| `philgeps.parquet`           | ~470 MB   | **Main** awarded-contracts table (this work) |
-| `awardees.parquet`           | ~5.8 MB   | Phase 4 (download, don't process)            |
-| `organizations.parquet`      | ~1.3 MB   | Phase 4 (download, don't process)            |
-| `oc4ids.json`                | ~984 MB   | not used                                     |
-| `area_of_deliveries`, `business_categories` | small | not used in this sub-project    |
+| File                                        |    Size | Use                                          |
+| ------------------------------------------- | ------: | -------------------------------------------- |
+| `philgeps.parquet`                          | ~470 MB | **Main** awarded-contracts table (this work) |
+| `awardees.parquet`                          | ~5.8 MB | Phase 4 (download, don't process)            |
+| `organizations.parquet`                     | ~1.3 MB | Phase 4 (download, don't process)            |
+| `oc4ids.json`                               | ~984 MB | not used                                     |
+| `area_of_deliveries`, `business_categories` |   small | not used in this sub-project                 |
 
 The 470 MB main file is comfortably downloadable in a GitHub Actions runner. The earlier "~11 GB"
 figure in `docs/data-sources.md` was wrong; correct it to ~1.95 GB total / ~470 MB main parquet.
@@ -45,22 +45,22 @@ The "~105K awarded contracts" figure was also wrong.
 
 **`philgeps.parquet` real schema (verified 2026-06-17 by reading the remote parquet footer + columns):**
 5,481,161 rows, 12 columns. All rows have `award_status = "active"`, a non-null `contract_amount`,
-and (all but one) a non-null `award_date` — i.e. the file *is* the awarded-contracts table.
+and (all but one) a non-null `award_date` — i.e. the file _is_ the awarded-contracts table.
 
-| Column              | Arrow type         | Maps to `contracts` column                |
-| ------------------- | ------------------ | ----------------------------------------- |
-| `id`                | uuid               | `id` → `'philgeps:' + id`                 |
-| `reference_id`      | string             | `project_id`                              |
-| `contract_no`       | string             | (kept in description context; not a column)|
-| `award_title`       | string             | `description` (fallback `notice_title`)   |
-| `notice_title`      | string             | description fallback                       |
-| `awardee_name`      | string             | `contractor`                              |
-| `organization_name` | string             | `procuring_entity` (new column)           |
-| `area_of_delivery`  | string             | `province` (best-effort location string)  |
-| `business_category` | string             | `category` (new column)                   |
-| `contract_amount`   | double (PHP)       | `contract_cost`                           |
-| `award_date`        | timestamp[us]      | `award_date` (new column, epoch ms)       |
-| `award_status`      | string (="active") | not stored                                |
+| Column              | Arrow type         | Maps to `contracts` column                  |
+| ------------------- | ------------------ | ------------------------------------------- |
+| `id`                | uuid               | `id` → `'philgeps:' + id`                   |
+| `reference_id`      | string             | `project_id`                                |
+| `contract_no`       | string             | (kept in description context; not a column) |
+| `award_title`       | string             | `description` (fallback `notice_title`)     |
+| `notice_title`      | string             | description fallback                        |
+| `awardee_name`      | string             | `contractor`                                |
+| `organization_name` | string             | `procuring_entity` (new column)             |
+| `area_of_delivery`  | string             | `province` (best-effort location string)    |
+| `business_category` | string             | `category` (new column)                     |
+| `contract_amount`   | double (PHP)       | `contract_cost`                             |
+| `award_date`        | timestamp[us]      | `award_date` (new column, epoch ms)         |
+| `award_status`      | string (="active") | not stored                                  |
 
 PhilGEPS has **no ABC, no bid_to_ceiling ratio, and no legislative_district** → those stay NULL for
 `source='philgeps'` rows. `OVER_CEILING`/`EXACT_CEILING`/`NEAR_CEILING`/`DISTRICT_DOMINANCE` do not
@@ -124,7 +124,7 @@ Per `docs/methodology.md` §"Phase 3 — Threshold-splitting", made concrete. Co
    on the methodology page.
 2. **Histogram** — bin all sub-threshold contracts `[0, T)` into fixed-width bins (PH-appropriate
    width, chosen relative to `T`; documented as a constant).
-3. **Smooth-tail fit** — fit a monotonically-decreasing exponential tail to the bins *below* the
+3. **Smooth-tail fit** — fit a monotonically-decreasing exponential tail to the bins _below_ the
    monitored band via **log-linear least squares written explicitly** (fit `log(count) ≈ a + b·x`
    over non-empty bins by the closed-form normal equations; no opaque library `.fit()`), then
    extrapolate `exp(a + b·x)` into the monitored band `[α·T, T)` to get the **expected** count and
@@ -142,16 +142,16 @@ All thresholds/weights live in `transform.py` constants so the methodology page 
 - Extend `contracts` with generic columns PhilGEPS needs that don't exist yet — at minimum
   `award_date` (epoch ms), `category` (TEXT), `procuring_entity` (TEXT). NULL for flood_control rows.
 - New table `threshold_splitting_yearly`:
-  | column          | type    | meaning                                  |
+  | column | type | meaning |
   | --------------- | ------- | ---------------------------------------- |
-  | year            | INTEGER | complete year (PK)                       |
-  | observed_count  | INTEGER | contracts in the monitored band          |
-  | observed_value  | REAL    | their peso value                         |
-  | expected_count  | REAL    | expected under the smooth tail           |
-  | expected_value  | REAL    | expected peso value                      |
-  | excess_count    | REAL    | observed − expected (count)              |
-  | excess_value    | REAL    | observed − expected (pesos)              |
-  | minor_total     | INTEGER | all sub-threshold contracts that year    |
+  | year | INTEGER | complete year (PK) |
+  | observed_count | INTEGER | contracts in the monitored band |
+  | observed_value | REAL | their peso value |
+  | expected_count | REAL | expected under the smooth tail |
+  | expected_value | REAL | expected peso value |
+  | excess_count | REAL | observed − expected (count) |
+  | excess_value | REAL | observed − expected (pesos) |
+  | minor_total | INTEGER | all sub-threshold contracts that year |
 
   The Worker reads this aggregate; it never recomputes.
 
@@ -197,7 +197,7 @@ All thresholds/weights live in `transform.py` constants so the methodology page 
   12-column set and fails loud before any mapping.
 - D1 statement-length limit → keep the existing 50-rows/INSERT batching. Only the band subset
   (~tens of thousands) is emitted, so the dump stays comparable to today's; `wrangler d1 execute
-  --file` / `d1 import` already handle that scale.
+--file` / `d1 import` already handle that scale.
 
 ## Testing
 
