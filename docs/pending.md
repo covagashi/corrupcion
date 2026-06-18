@@ -21,15 +21,31 @@ in-window PhilGEPS rows → 42,229 monitored-band contracts + 248,220 DPWH proje
   / ₱65.4 B) and all 13 year rows (not the empty state); `/`, `/methodology` and `/?source=philgeps`
   all return 200. (This machine ships Node 20.17.0, below the `engine-strict` ≥22 floor some deps
   need; a portable Node 22 was used just for this.)
-- This local run seeded **local** D1 only. The production **remote** D1 seed still happens via CI or
-  a logged-in machine (item 2). The Claude-Code-on-the-web sandbox remains blocked on `huggingface.co`
+- **Remote D1 seeded + deployed 2026-06-18.** Same run was pushed to production from the logged-in
+  machine (see item 2). The Claude-Code-on-the-web sandbox remains blocked on `huggingface.co`
   egress — see [pending-data-run.md](pending-data-run.md).
 
-## 2. One-time deploy setup (you)
+## 2. One-time deploy setup — DONE 2026-06-18 (CI token still optional)
 
-From [deploy.md](deploy.md): create the D1 database, paste its real `database_id` into
-`wrangler.jsonc`, add the `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` repo secrets, then run the
-`Refresh data & deploy` workflow once. After that the monthly cron keeps data fresh.
+Done from a logged-in machine (`wrangler` OAuth, account `clopez@tuta.io`):
+
+- Created the `corrupcion-db` D1 instance; its real `database_id`
+  (`7c485949-e604-4b12-aef4-488207ccf74a`) is committed in `wrangler.jsonc`.
+- Seeded **remote** D1 with all 300,304 rows (dpwh 248,220 / philgeps 42,229 / flood_control 9,855)
+  + the 13-year `threshold_splitting_yearly` table.
+- `npm run build` + `npx wrangler deploy` → **live at https://corrupcion.clopez-5fd.workers.dev**;
+  `/`, `/threshold-splitting`, `/methodology`, `/?source=philgeps` all return 200 with real data.
+- Set the `CLOUDFLARE_ACCOUNT_ID` GitHub repo secret.
+
+**Seeding gotcha:** `wrangler d1 execute --remote --file` switches to the R2-upload import API for
+the 125 MB dump and hung with 0 rows written; `pipeline/split_sql.py` splits it into ~5 MB
+statement-aligned chunks that seed reliably via the direct batched API. Re-seeds should use the
+chunk loop, not a single `--file`.
+
+**Still optional — `CLOUDFLARE_API_TOKEN`** for hands-off CI (`Refresh data & deploy` workflow):
+wrangler OAuth can't mint it, so create it in the Cloudflare dashboard (Edit Cloudflare Workers
+template + `D1 · Edit`) and add it as a repo secret. Until then, re-deploys run from a logged-in
+machine. The site is already live without it.
 
 ## 3. Remaining roadmap phases (not started)
 
