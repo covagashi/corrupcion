@@ -71,9 +71,11 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 - [ ] Unified search across all contracts (server-side, returns small HTML). A source filter
       (Flood Control / PhilGEPS) is in place on the home list as a first step.
 
-> Note: the PhilGEPS pipeline + metric code and the front-end are done and type-checked; the
-> end-to-end run (downloading `philgeps.parquet` from Hugging Face → `transform.py` → seed D1) still
-> needs to happen on a machine/CI where `huggingface.co` is reachable.
+> **Not yet run:** the PhilGEPS pipeline + metric code and the front end are done and type-checked,
+> but the end-to-end data run (download `philgeps.parquet` → `transform.py` → seed D1) could not
+> execute in the web sandbox (egress blocks `huggingface.co`). Exact remaining steps and how to
+> finish them (CI / egress allowlist / logged-in machine) are in
+> [pending-data-run.md](pending-data-run.md).
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
 

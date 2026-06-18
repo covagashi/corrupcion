@@ -60,3 +60,6 @@ deploy → Run workflow**. After the first success the monthly cron keeps the da
   so re-running is safe.
 - Remote `d1 execute --file` of the ~6 MB dump is fine but not instant; if it ever gets unwieldy,
   switch the data step to `wrangler d1 import`.
+- **Network:** `pipeline/fetch.py` downloads the bulk datasets from `huggingface.co`. CI runners and
+  normal dev machines reach it fine; the Claude-Code-on-the-web sandbox does not unless the host is
+  added to the environment's egress allowlist. See [pending-data-run.md](pending-data-run.md).
