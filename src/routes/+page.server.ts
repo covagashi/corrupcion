@@ -4,7 +4,7 @@ import { getTotals, listContracts } from '$lib/server/contracts';
 export const load: PageServerLoad = async ({ platform, url }) => {
 	const search = url.searchParams.get('q')?.trim() || '';
 	const flaggedOnly = url.searchParams.get('all') !== '1';
-	const source = url.searchParams.get('source') as 'flood_control' | 'philgeps' | null;
+	const source = url.searchParams.get('source') as 'flood_control' | 'philgeps' | 'dpwh' | null;
 
 	const [totals, result] = await Promise.all([
 		getTotals(platform),

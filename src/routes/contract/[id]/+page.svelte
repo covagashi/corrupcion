@@ -9,6 +9,7 @@
 	const flags = $derived(parseFlags(c.risk_flags));
 	const sortedFlags = $derived([...flags].sort((a, b) => FLAGS[b].weight - FLAGS[a].weight));
 	const isPhilgeps = $derived(c.source === 'philgeps');
+	const isDpwh = $derived(c.source === 'dpwh');
 	const awardYear = $derived(c.award_date ? new Date(c.award_date).getUTCFullYear() : null);
 </script>
 
@@ -61,17 +62,33 @@
 	<section class="mt-6">
 		<h2 class="text-sm font-semibold tracking-wide text-slate-500 uppercase">The money</h2>
 		<dl class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
-			{#if !isPhilgeps}
+			{#if isPhilgeps}
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Awarded contract amount</dt>
+					<dd class="font-medium text-slate-900">{peso(c.contract_cost)}</dd>
+				</div>
+			{:else if isDpwh}
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Approved budget</dt>
+					<dd class="font-medium text-slate-900">{peso(c.abc)}</dd>
+				</div>
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Amount paid</dt>
+					<dd class="font-medium text-slate-900">{peso(c.contract_cost)}</dd>
+				</div>
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Paid as share of budget</dt>
+					<dd class="font-medium text-slate-900">{percent(c.bid_to_ceiling_ratio)}</dd>
+				</div>
+			{:else}
 				<div class="flex justify-between px-4 py-2.5 text-sm">
 					<dt class="text-slate-500">Approved budget (ceiling)</dt>
 					<dd class="font-medium text-slate-900">{peso(c.abc)}</dd>
 				</div>
-			{/if}
-			<div class="flex justify-between px-4 py-2.5 text-sm">
-				<dt class="text-slate-500">Awarded contract {isPhilgeps ? 'amount' : 'cost'}</dt>
-				<dd class="font-medium text-slate-900">{peso(c.contract_cost)}</dd>
-			</div>
-			{#if !isPhilgeps}
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Awarded contract cost</dt>
+					<dd class="font-medium text-slate-900">{peso(c.contract_cost)}</dd>
+				</div>
 				<div class="flex justify-between px-4 py-2.5 text-sm">
 					<dt class="text-slate-500">Bid as share of ceiling</dt>
 					<dd class="font-medium text-slate-900">{percent(c.bid_to_ceiling_ratio)}</dd>
@@ -119,6 +136,17 @@
 				<div class="flex justify-between px-4 py-2.5 text-sm">
 					<dt class="text-slate-500">Award year</dt>
 					<dd class="font-medium text-slate-900">{awardYear ?? '—'}</dd>
+				</div>
+			{:else if isDpwh}
+				{#if c.category}
+					<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+						<dt class="text-slate-500">Category</dt>
+						<dd class="text-right font-medium text-slate-900">{c.category}</dd>
+					</div>
+				{/if}
+				<div class="flex justify-between px-4 py-2.5 text-sm">
+					<dt class="text-slate-500">Year</dt>
+					<dd class="font-medium text-slate-900">{c.infra_year ?? c.completion_year ?? '—'}</dd>
 				</div>
 			{:else}
 				<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">

@@ -26,6 +26,11 @@ FLOOD_CONTROL_FALLBACK_URL = (
 PHILGEPS_BASE = "https://huggingface.co/datasets/bettergovph/philgeps-data/resolve/main"
 PHILGEPS_FILES = ("philgeps.parquet", "awardees.parquet", "organizations.parquet")
 
+# DPWH infrastructure transparency data on Hugging Face (~248K projects). Verify the exact repo
+# path/filename if this 404s (the dataset is `bettergovph/dpwh-transparency-data`).
+DPWH_BASE = "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/resolve/main"
+DPWH_FILE = "dpwh_transparency_data.parquet"
+
 
 def resolve_download_url(dataset_id: int, fallback: str) -> str:
     """Ask the catalog API for a dataset's first resource download_url."""
@@ -61,6 +66,9 @@ def main() -> None:
     print("Fetching PhilGEPS datasets...")
     for name in PHILGEPS_FILES:
         download(f"{PHILGEPS_BASE}/{name}", SOURCES / name)
+
+    print("Fetching DPWH infrastructure dataset...")
+    download(f"{DPWH_BASE}/{DPWH_FILE}", SOURCES / DPWH_FILE)
     print("Done.")
 
 

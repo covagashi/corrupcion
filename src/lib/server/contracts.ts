@@ -66,7 +66,7 @@ export async function listContracts(
 		search?: string;
 		flaggedOnly?: boolean;
 		limit?: number;
-		source?: 'flood_control' | 'philgeps';
+		source?: 'flood_control' | 'philgeps' | 'dpwh';
 	}
 ): Promise<ListResult> {
 	const limit = Math.min(opts.limit ?? 50, 100);

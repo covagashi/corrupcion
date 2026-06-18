@@ -53,6 +53,7 @@
 			<option value="">All sources</option>
 			<option value="flood_control">Flood Control</option>
 			<option value="philgeps">PhilGEPS</option>
+			<option value="dpwh">DPWH Infra</option>
 		</select>
 		<button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>
 	</form>
@@ -94,6 +95,14 @@
 							<span>{c.procuring_entity ?? c.province ?? 'PhilGEPS'}</span>
 							<span>•</span>
 							<span>{pesoShort(c.contract_cost)}</span>
+							{#if c.category}
+								<span>•</span>
+								<span>{c.category}</span>
+							{/if}
+						{:else if c.source === 'dpwh'}
+							<span>{c.province ?? c.region ?? 'DPWH'}</span>
+							<span>•</span>
+							<span>{pesoShort(c.abc)}</span>
 							{#if c.category}
 								<span>•</span>
 								<span>{c.category}</span>

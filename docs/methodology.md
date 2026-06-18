@@ -97,3 +97,26 @@ ceiling. The value and citation live in `pipeline/metric_config.py` (`THRESHOLD_
   trend reading.
 - State plainly that concentration at the threshold is an **indicator of possible reduced average
   competition, not automatic proof of splitting or irregularity** in any individual contract.
+
+---
+
+## Phase 3b — DPWH infrastructure projects (implemented)
+
+Dataset: the **DPWH transparency** bulk Parquet (`dpwh_transparency_data.parquet`, 248,220 projects;
+schema in [data-sources.md](data-sources.md)). These are large infrastructure projects, so neither
+the bid-to-ceiling ratio (no awarded-bid-vs-ceiling pair) nor threshold-splitting (no shared
+small-value ceiling) applies. They are surfaced in the unified list/search with their location and
+budget, and carry **one** transparent flag.
+
+Field mapping into `contracts` (`pipeline/dpwh.py`): `source='dpwh'`, `id='dpwh:'+contractId`,
+`abc = budget` (approved budget), `contract_cost = amountPaid` (amount disbursed),
+`bid_to_ceiling_ratio = amountPaid/budget`, plus `province`/`region` (from the nested `location`
+struct), `latitude`/`longitude`, `category`, `infra_year`, `completion_year`, `start_date`.
+
+| Flag          | Condition             | Weight | Reading                                                                                        |
+| ------------- | --------------------- | -----: | ---------------------------------------------------------------------------------------------- |
+| `OVER_BUDGET` | `amountPaid > budget` |     40 | Disbursed more than the project's own approved budget — money paid beyond what was authorized. |
+
+Supplier-concentration for DPWH (e.g. one contractor dominating a province/region) is **not yet
+computed** — the existing concentration aggregate is keyed by legislative district, which DPWH
+infrastructure data does not carry. It is a candidate for a later phase.

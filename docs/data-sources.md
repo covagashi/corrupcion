@@ -11,6 +11,13 @@ All data sources for the Philippine anti-corruption platform. The reference repo
   (403/429/error 1015). The reference scraper (`dpwh-transparency-data-api-scraper-main`) works around
   it with `curl-cffi` TLS-fingerprint rotation + proxy rotation. Prefer the bulk datasets below; hit the
   live API only for incremental updates.
+- Bulk Parquet: `dpwh_transparency_data.parquet` — **248,220 projects**, 23 top-level columns
+  (verified 2026-06-18): `contractId`, `description`, `category`, `componentCategories`, `status`,
+  `budget` (double), `amountPaid` (int64), `progress` (double), `location` (struct `{province,
+region}`), `contractor`, `startDate`/`completionDate` (date), `infraYear` (text), `programName`,
+  `sourceOfFunds`, `isLive` (bool), `livestreamUrl`/`livestreamVideoId`/`livestreamDetectedAt`
+  (json), `latitude`/`longitude` (double), `reportCount` (int64), `hasSatelliteImage` (bool).
+  Consumed in `pipeline/dpwh.py` → `source='dpwh'` rows + the `OVER_BUDGET` flag.
 
 ## All-agency contracts — PhilGEPS
 

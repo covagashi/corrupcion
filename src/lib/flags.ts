@@ -6,7 +6,8 @@ export type FlagCode =
 	| 'EXACT_CEILING'
 	| 'NEAR_CEILING'
 	| 'DISTRICT_DOMINANCE'
-	| 'BELOW_THRESHOLD_CLUSTER';
+	| 'BELOW_THRESHOLD_CLUSTER'
+	| 'OVER_BUDGET';
 
 export interface FlagInfo {
 	label: string;
@@ -51,6 +52,13 @@ export const FLAGS: Record<FlagCode, FlagInfo> = {
 			'This contract’s amount sits just under the legal limit above which open competitive bidding becomes mandatory — a pattern that, across many contracts, can indicate splitting to avoid competition.',
 		weight: 20,
 		severity: 'medium'
+	},
+	OVER_BUDGET: {
+		label: 'Paid above the approved budget',
+		explanation:
+			'The amount disbursed for this infrastructure project exceeds its own approved budget — money paid out beyond what was authorized.',
+		weight: 40,
+		severity: 'high'
 	}
 };
 

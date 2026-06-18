@@ -34,11 +34,13 @@ import polars as pl  # noqa: E402
 
 from pipeline import metric_config as mc  # noqa: E402
 from pipeline import philgeps as pg  # noqa: E402
+from pipeline import dpwh as dpwh_mod  # noqa: E402
 from pipeline.threshold_splitting import band_stats  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
 SOURCE = HERE / "sources" / "flood_control.json"
 PHILGEPS_SOURCE = HERE / "sources" / "philgeps.parquet"
+DPWH_SOURCE = HERE / "sources" / "dpwh_transparency_data.parquet"
 OUT = HERE / "out" / "contracts.sql"
 
 # Metric thresholds / weights (kept here so the methodology page can quote them verbatim).
@@ -186,6 +188,56 @@ def philgeps_row_sql(row: dict) -> str:
     return "(" + ", ".join(sql_str(v) for v in values) + ")"
 
 
+def build_dpwh(contract_rows: list[str]) -> None:
+    """Scan dpwh_transparency_data.parquet, map projects to source='dpwh' rows, flag OVER_BUDGET,
+    and append them to contract_rows. Large infra contracts — no threshold-splitting applies."""
+    if not DPWH_SOURCE.exists():
+        print("  dpwh parquet missing; skipping DPWH (run fetch.py)")
+        return
+
+    lf = pl.scan_parquet(DPWH_SOURCE)
+    cols = set(lf.collect_schema().names())
+    assert cols == dpwh_mod.EXPECTED_COLUMNS, f"DPWH schema drift: {cols ^ dpwh_mod.EXPECTED_COLUMNS}"
+
+    df = (
+        lf.select([
+            "contractId", "description", "category", "contractor",
+            # `location` is a struct{province, region}; flatten it for the mapper.
+            pl.col("location").struct.field("province").alias("province"),
+            pl.col("location").struct.field("region").alias("region"),
+            "budget", "amountPaid", "startDate", "completionDate", "infraYear",
+            "latitude", "longitude",
+        ])
+        .collect(engine="streaming")
+    )
+    print(f"  DPWH: {df.height} projects")
+
+    flagged = 0
+    for rec in df.iter_rows(named=True):
+        row = dpwh_mod.map_row(rec)
+        if row["risk_score"] > 0:
+            flagged += 1
+        contract_rows.append(dpwh_row_sql(row))
+    print(f"  DPWH: {flagged} flagged (paid above approved budget)")
+
+
+def dpwh_row_sql(row: dict) -> str:
+    """Render a mapped DPWH row in the SAME column order as the contracts INSERT."""
+    values = [
+        row["id"], row["source"], row["project_id"], row["description"],
+        None, None,  # type_of_work, infra_type
+        row["contractor"],
+        row["region"], row["province"], None, None, None, None,  # region..implementing_office
+        row["latitude"], row["longitude"],
+        row["abc"], row["contract_cost"],
+        row["infra_year"], None, row["completion_year"], row["start_date"],  # infra/funding/completion/start
+        row["bid_to_ceiling_ratio"],
+        json.dumps(row["risk_flags"]), row["risk_score"],
+        None, row["category"], None,  # award_date, category, procuring_entity
+    ]
+    return "(" + ", ".join(sql_str(v) for v in values) + ")"
+
+
 def main() -> None:
     print(f"Reading {SOURCE} ...")
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
@@ -279,6 +331,10 @@ def main() -> None:
     # Pass 4: PhilGEPS — yearly threshold-splitting stat + monitored-band contracts.
     print("Processing PhilGEPS ...")
     yearly_rows = build_philgeps(contract_rows)
+
+    # Pass 5: DPWH infrastructure projects (source='dpwh', OVER_BUDGET flag).
+    print("Processing DPWH ...")
+    build_dpwh(contract_rows)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as f:

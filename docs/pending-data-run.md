@@ -1,8 +1,8 @@
-# Pending: the PhilGEPS data run (blocked in the web sandbox)
+# Pending: the PhilGEPS + DPWH data run (blocked in the web sandbox)
 
-Phase 3a (PhilGEPS + threshold-splitting) is **fully implemented and type-checked**, but the parts
-that need the actual ~470 MB dataset could **not** be executed in the Claude-Code-on-the-web sandbox
-because its network egress policy blocks `huggingface.co`:
+Phase 3a (PhilGEPS + threshold-splitting) and Phase 3b (DPWH infrastructure) are **fully implemented
+and type-checked**, but the parts that need the actual datasets could **not** be executed in the
+Claude-Code-on-the-web sandbox because its network egress policy blocks `huggingface.co`:
 
 ```
 $ python -c "import httpx; httpx.head('https://huggingface.co/.../philgeps.parquet')"
@@ -16,16 +16,20 @@ $ python -c "import httpx; httpx.head('https://huggingface.co/.../philgeps.parqu
 - D1 schema (`db/schema.sql`): new columns + `threshold_splitting_yearly`.
 - Front end: `BELOW_THRESHOLD_CLUSTER` flag, `/threshold-splitting` page, source filter, footer links.
 - 11 pytest unit tests green; `npm run check` clean.
-- The `philgeps.parquet` schema was confirmed against the real file's Parquet metadata, and the
-  UUID-`id` handling + the full `build_philgeps` path were validated end-to-end against a
-  **schema-exact synthetic parquet** (duckdb-written UUID/double/timestamp columns) that loads
-  cleanly into the real D1 schema.
+- Both the `philgeps.parquet` and `dpwh_transparency_data.parquet` schemas were confirmed against
+  the real files' Parquet metadata, and the full `build_philgeps` / `build_dpwh` paths (UUID `id`
+  hex-encoding, nested `location` struct, DATE columns) were validated end-to-end against
+  **schema-exact synthetic parquets** (duckdb-written) that load cleanly into the real D1 schema.
 
 ## What could NOT be run here (needs `huggingface.co` reachable)
 
-1. `python pipeline/fetch.py` — download `philgeps.parquet` (+ `awardees`/`organizations`).
-2. `python pipeline/transform.py` — scan all 5.48M rows, write `pipeline/out/contracts.sql`
-   (flood-control rows + PhilGEPS band rows + the `threshold_splitting_yearly` table).
+1. `python pipeline/fetch.py` — download `philgeps.parquet` (+ `awardees`/`organizations`) and
+   `dpwh_transparency_data.parquet`. **Verify the DPWH download path** in `fetch.py`
+   (`DPWH_BASE` / `DPWH_FILE`): the schema is verified, but the exact Hugging Face repo path could
+   not be reached to confirm — adjust if it 404s.
+2. `python pipeline/transform.py` — scan all 5.48M PhilGEPS rows + 248K DPWH projects, write
+   `pipeline/out/contracts.sql` (flood-control + PhilGEPS band + DPWH rows + the
+   `threshold_splitting_yearly` table).
 3. Seed D1 and smoke-test the live pages:
    ```sh
    npx wrangler d1 execute corrupcion-db --local --file=db/schema.sql --yes

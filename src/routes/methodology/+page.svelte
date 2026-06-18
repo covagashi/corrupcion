@@ -3,7 +3,13 @@
 	import { FLAGS, type FlagCode } from '$lib/flags';
 
 	// Show flags strongest-first, the same order the detail page uses.
-	const order: FlagCode[] = ['OVER_CEILING', 'DISTRICT_DOMINANCE', 'EXACT_CEILING', 'NEAR_CEILING'];
+	const order: FlagCode[] = [
+		'OVER_CEILING',
+		'OVER_BUDGET',
+		'DISTRICT_DOMINANCE',
+		'EXACT_CEILING',
+		'NEAR_CEILING'
+	];
 </script>
 
 <svelte:head>
@@ -80,8 +86,9 @@
 	</section>
 
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
-		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts (via BetterGov). Our
-		methodology is public and adapts the approach of contractes.cat to Philippine data.
+		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts + DPWH infrastructure
+		transparency data (via BetterGov). Our methodology is public and adapts the approach of
+		contractes.cat to Philippine data.
 		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
 			>Below-threshold pricing</a
 		>.

@@ -67,8 +67,11 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
       Full statistic (observed vs expected under a smooth log-linear tail, excess count/value) in
       [methodology.md](methodology.md#phase-3--threshold-splitting-implemented). Surfaced as the
       `BELOW_THRESHOLD_CLUSTER` flag plus the `/threshold-splitting` page.
-- [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`) — deferred until its Parquet schema is
-      verified (don't repeat the blind-mapping risk that bit the PhilGEPS UUID column).
+- [x] DPWH Infrastructure (`dpwh_transparency_data.parquet`, 248,220 projects) into the pipeline.
+      Schema verified; mapped to `source='dpwh'` rows with the `OVER_BUDGET` flag (amount paid >
+      approved budget). See [methodology.md](methodology.md#phase-3b--dpwh-infrastructure-projects-implemented).
+      (The Hugging Face download path in `fetch.py` still needs a live confirmation — see
+      [pending-data-run.md](pending-data-run.md).)
 - [x] Unified search across all contracts (server-side, returns small HTML). The list spans both
       sources, with a Flood Control / PhilGEPS source filter; search matches contractor, description,
       district, procuring entity, province and category; the list and detail pages render
