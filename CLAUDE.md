@@ -31,6 +31,11 @@ SvelteKit (Svelte 5) + TypeScript + Tailwind 4, deployed to **Cloudflare Workers
   never compute metrics or fetch government APIs at request time. Server-side D1 access lives in
   `src/lib/server/contracts.ts`; flag definitions in `src/lib/flags.ts` feed both the UI and the
   public `/methodology` page. Metric details: @docs/methodology.md.
+- `transform.py` reads the **PhilGEPS Parquet** with `polars` (see `pipeline/requirements.txt`) and
+  computes the threshold-splitting metric over all 5.48M rows offline. **Do not persist all rows in
+  D1** — only the per-year aggregate (`threshold_splitting_yearly`) and the monitored-band subset
+  (flagged `source='philgeps'` contracts) are stored. Threshold-splitting constants live in
+  `pipeline/metric_config.py`; the statistic in `pipeline/threshold_splitting.py`.
 - Data sources, endpoints, and bulk datasets are documented in @docs/data-sources.md.
 - The DPWH live API is behind Cloudflare bot protection; plain `fetch` gets blocked. Use the bulk
   Hugging Face datasets instead (see data-sources doc).

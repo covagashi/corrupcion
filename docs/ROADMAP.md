@@ -61,13 +61,19 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 
 ## Phase 3 — Add the big contract datasets
 
-- [ ] PhilGEPS (`philgeps.parquet`, ~493 MB — all agencies) into the pipeline
+- [x] PhilGEPS (`philgeps.parquet`, ~470 MB / 5.48M rows — all agencies) into the pipeline
+- [x] Adapt the metric: legal threshold-splitting detection — amounts clustered just below the
+      RA 9184 SVP threshold (`T = ₱1,000,000`, verified; RA 12009 raises it to ₱2,000,000 from 2025).
+      Full statistic (observed vs expected under a smooth log-linear tail, excess count/value) in
+      [methodology.md](methodology.md#phase-3--threshold-splitting-implemented). Surfaced as the
+      `BELOW_THRESHOLD_CLUSTER` flag plus the `/threshold-splitting` page.
 - [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`, ~21 MB)
-- [ ] Adapt the metric: add legal threshold-splitting detection (amounts clustered just below
-      RA 9184 / RA 12009 procurement thresholds — verify current threshold values before hardcoding).
-      Full statistic (observed vs expected under a smooth tail, excess count/value) specified in
-      [methodology.md](methodology.md#phase-3--threshold-splitting-planned-not-yet-implemented).
-- [ ] Unified search across all contracts (server-side, returns small HTML)
+- [ ] Unified search across all contracts (server-side, returns small HTML). A source filter
+      (Flood Control / PhilGEPS) is in place on the home list as a first step.
+
+> Note: the PhilGEPS pipeline + metric code and the front-end are done and type-checked; the
+> end-to-end run (downloading `philgeps.parquet` from Hugging Face → `transform.py` → seed D1) still
+> needs to happen on a machine/CI where `huggingface.co` is reachable.
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
 

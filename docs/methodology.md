@@ -7,7 +7,8 @@ a pattern worth reviewing; **it is never, by itself, proof of fraud or wrongdoin
 The metric weights and thresholds live in code so this page can quote them verbatim:
 
 - Phase 1 (Flood Control): `pipeline/transform.py`
-- Phase 3 (threshold-splitting): to be added in the same file.
+- Phase 3 (threshold-splitting): constants in `pipeline/metric_config.py`, statistic in
+  `pipeline/threshold_splitting.py`, wiring in `pipeline/transform.py`.
 
 ---
 
@@ -38,39 +39,56 @@ Supplier concentration is precomputed per `(contractor, legislative_district)` i
 
 ---
 
-## Phase 3 — Threshold-splitting (planned, not yet implemented)
+## Phase 3 — Threshold-splitting (implemented)
 
 Adapted from [contractes.cat](https://contractes.cat). This signal does **not** apply to the
 Phase 1 flood-control data — those are large infrastructure contracts with no common small-value
-ceiling. It applies to **PhilGEPS small-value procurement**, where many small contracts share a
-fixed legal threshold above which competitive bidding becomes mandatory.
+ceiling. It applies to **PhilGEPS small-value procurement** (5.48M awarded contracts), where many
+small contracts share a fixed legal threshold above which competitive bidding becomes mandatory.
 
 > **The flood-control analog already captured in Phase 1** is the clustering of the bid-to-ceiling
 > ratio at exactly 1.0 (`EXACT_CEILING`). That is clustering at each contract's _own_ ceiling, which
 > is different from splitting awards to stay below a _single legal_ threshold.
 
+The metric is computed **entirely offline** over all 5.48M PhilGEPS rows (`pipeline/transform.py`
+with `polars`). Only two things land in D1: a per-year aggregate (`threshold_splitting_yearly`) and
+the monitored-band contracts themselves (flagged rows); the raw 5.48M rows are never stored.
+
+### The threshold `T` (verified)
+
+`THRESHOLD_T = ₱1,000,000` — the **Small Value Procurement** ceiling for national agencies under the
+**RA 9184 2016 Revised IRR, Annex H**. That ceiling governs almost the whole data window
+(2013–2024). **RA 12009** (the New Government Procurement Act) raises SVP to **₱2,000,000**, but its
+IRR only took effect in **2025**, so the bulk of the awarded contracts here fall under the RA 9184
+ceiling. The value and citation live in `pipeline/metric_config.py` (`THRESHOLD_T`, `_T_CITATION`).
+
 ### The statistic
 
-Pick the legal small-value procurement threshold `T` (PH: from the RA 9184 / RA 12009 IRR —
-**verify the current peso value before hardcoding**; the contractes.cat reference uses €15,000).
-
 1. **Monitored band.** Count contracts awarded in the narrow band just below the threshold,
-   e.g. `[0.9933·T, T)` — the contractes.cat band is `[14,900, 14,999.99]` of a `15,000` ceiling.
-2. **Histogram.** Bin all small-value contracts (`[floor, T)`) into fixed-width bins (contractes.cat
-   uses 500-EUR bins; use a PH-appropriate width).
-3. **Expected vs observed.** Fit a smooth, monotonically-decreasing tail (e.g. exponential) to the
-   bins _below_ the monitored band and extrapolate it into the band to get an **expected** count.
-   Report:
+   `[BAND_ALPHA·T, T)` with `BAND_ALPHA = 0.9933` (mirrors contractes.cat: `[14,900, 14,999.99]` of
+   a `15,000` ceiling). For `T = ₱1,000,000` the band is `[₱993,300, ₱1,000,000)`, snapped to bin
+   edges.
+2. **Histogram.** Bin all sub-threshold contracts (`[0, T)`) into fixed-width bins of
+   `BIN_WIDTH = ₱25,000` (40 bins below the ceiling).
+3. **Expected vs observed.** Fit a smooth, monotonically-decreasing exponential tail to the bins
+   _below_ the monitored band by **log-linear least squares** (`log(count) ≈ a + b·i`) and
+   extrapolate it into the band to get an **expected** count. Report:
    - observed count and value in the band,
    - expected count and value under the smooth tail,
    - **excess = observed − expected**, in both count and pesos.
 
-   contractes.cat reference figures: 11,471 observed vs ~467 expected in the band → ~11,004 excess
-   contracts and ~€195.1M above expectation; the band is ~1.83% of all minor contracts (~1 in 55).
+   A year with fewer than 3 populated bins below the band is left without an expected figure
+   (shown blank), since the tail can't be fit reliably.
 
-4. **Companion series — weight of minor contracts.** Track the share of minor (sub-threshold)
-   contracts over total contracting through time. A rising share means relatively less competitive
-   procurement.
+4. **Per-contract flag.** Contracts inside the monitored band carry `BELOW_THRESHOLD_CLUSTER`
+   (weight **20**, `metric_config.BAND_WEIGHT`), surfaced like any other flag.
+
+5. **Companion series — weight of minor contracts.** Each yearly row also stores `minor_total`, the
+   count of all sub-threshold contracts, so the band can be read as a share of minor contracting.
+
+   contractes.cat reference figures (for context): 11,471 observed vs ~467 expected in the band →
+   ~11,004 excess contracts and ~€195.1M above expectation; the band is ~1.83% of all minor
+   contracts (~1 in 55).
 
 ### Presentation rules (carry over from contractes.cat)
 

@@ -14,7 +14,13 @@ All data sources for the Philippine anti-corruption platform. The reference repo
 
 ## All-agency contracts — PhilGEPS
 
-- Bulk data: Hugging Face `bettergovph/philgeps-data` (~11 GB, ~105K awarded contracts).
+- Bulk data: Hugging Face `bettergovph/philgeps-data` (~1.95 GB total across the dataset).
+  `philgeps.parquet` is the main awarded-contracts table: **~470 MB, 5,481,161 rows** (verified
+  2026-06-17). `awardees.parquet` / `organizations.parquet` are kept for Phase 4 alignment.
+- `philgeps.parquet` schema — 12 columns: `id` (uuid), `reference_id`, `contract_no`,
+  `award_title`, `notice_title`, `awardee_name`, `organization_name`, `area_of_delivery`,
+  `business_category`, `contract_amount` (double), `award_date` (timestamp[us]),
+  `award_status` (= "active").
 - PhilGEPS has no usable public API; bulk downloads are the way in.
 - The BetterGovPH pipeline already links ~37K PhilGEPS contracts to DPWH projects.
 
