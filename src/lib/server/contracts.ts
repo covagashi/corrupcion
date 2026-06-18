@@ -3,6 +3,7 @@ import { error } from '@sveltejs/kit';
 
 export interface ContractRow {
 	id: string;
+	source: string;
 	description: string | null;
 	contractor: string | null;
 	region: string | null;
@@ -50,8 +51,8 @@ function db(platform: App.Platform | undefined): D1Database {
 }
 
 const LIST_COLUMNS =
-	'id, description, contractor, region, province, municipality, legislative_district, ' +
-	'abc, contract_cost, bid_to_ceiling_ratio, risk_flags, risk_score';
+	'id, source, description, contractor, region, province, municipality, legislative_district, ' +
+	'abc, contract_cost, bid_to_ceiling_ratio, risk_flags, risk_score, category, procuring_entity';
 
 export interface ListResult {
 	rows: ContractRow[];
@@ -74,8 +75,12 @@ export async function listContracts(
 
 	if (opts.flaggedOnly) where.push('risk_score > 0');
 	if (opts.search) {
+		// One bound parameter, matched across the columns that carry a name across both sources
+		// (flood-control districts + PhilGEPS procuring entity / category / province).
+		const p = `?${binds.length + 1}`;
 		where.push(
-			`(contractor LIKE ?${binds.length + 1} OR description LIKE ?${binds.length + 1} OR legislative_district LIKE ?${binds.length + 1})`
+			`(contractor LIKE ${p} OR description LIKE ${p} OR legislative_district LIKE ${p} ` +
+				`OR procuring_entity LIKE ${p} OR province LIKE ${p} OR category LIKE ${p})`
 		);
 		binds.push(`%${opts.search}%`);
 	}

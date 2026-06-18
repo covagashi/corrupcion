@@ -18,18 +18,18 @@
 </script>
 
 <svelte:head>
-	<title>Flood-control contracts — irregularity check</title>
+	<title>Philippine government contracts — irregularity check</title>
 	<meta
 		name="description"
-		content="Philippine flood-control contracts ranked by simple, auditable irregularity flags."
+		content="Philippine government contracts (flood control + PhilGEPS) ranked by simple, auditable irregularity flags."
 	/>
 </svelte:head>
 
 <main class="mx-auto max-w-screen-sm px-4 pb-16">
 	<header class="py-6">
-		<h1 class="text-xl font-bold text-slate-900">Flood-control contracts</h1>
+		<h1 class="text-xl font-bold text-slate-900">Government contracts</h1>
 		<p class="mt-1 text-sm text-slate-600">
-			{data.totals.contracts.toLocaleString()} projects worth {peso(data.totals.totalValue)}.
+			{data.totals.contracts.toLocaleString()} contracts worth {peso(data.totals.totalValue)}.
 			{data.totals.flagged.toLocaleString()} carry at least one irregularity flag. Ranked most concerning
 			first.
 		</p>
@@ -90,12 +90,22 @@
 					</div>
 					<p class="mt-1 line-clamp-2 text-sm text-slate-600">{c.description ?? '—'}</p>
 					<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-						<span>{c.legislative_district ?? '—'}</span>
-						<span>•</span>
-						<span>{pesoShort(c.contract_cost)}</span>
-						{#if c.bid_to_ceiling_ratio != null}
+						{#if c.source === 'philgeps'}
+							<span>{c.procuring_entity ?? c.province ?? 'PhilGEPS'}</span>
 							<span>•</span>
-							<span>{percent(c.bid_to_ceiling_ratio)} of ceiling</span>
+							<span>{pesoShort(c.contract_cost)}</span>
+							{#if c.category}
+								<span>•</span>
+								<span>{c.category}</span>
+							{/if}
+						{:else}
+							<span>{c.legislative_district ?? '—'}</span>
+							<span>•</span>
+							<span>{pesoShort(c.contract_cost)}</span>
+							{#if c.bid_to_ceiling_ratio != null}
+								<span>•</span>
+								<span>{percent(c.bid_to_ceiling_ratio)} of ceiling</span>
+							{/if}
 						{/if}
 					</div>
 					{#if flags.length}

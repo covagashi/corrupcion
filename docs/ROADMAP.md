@@ -67,9 +67,13 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
       Full statistic (observed vs expected under a smooth log-linear tail, excess count/value) in
       [methodology.md](methodology.md#phase-3--threshold-splitting-implemented). Surfaced as the
       `BELOW_THRESHOLD_CLUSTER` flag plus the `/threshold-splitting` page.
-- [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`, ~21 MB)
-- [ ] Unified search across all contracts (server-side, returns small HTML). A source filter
-      (Flood Control / PhilGEPS) is in place on the home list as a first step.
+- [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`) — deferred until its Parquet schema is
+      verified (don't repeat the blind-mapping risk that bit the PhilGEPS UUID column).
+- [x] Unified search across all contracts (server-side, returns small HTML). The list spans both
+      sources, with a Flood Control / PhilGEPS source filter; search matches contractor, description,
+      district, procuring entity, province and category; the list and detail pages render
+      source-appropriate fields (ceiling/ratio for flood control, agency/category/award year for
+      PhilGEPS).
 
 > **Not yet run:** the PhilGEPS pipeline + metric code and the front end are done and type-checked,
 > but the end-to-end data run (download `philgeps.parquet` → `transform.py` → seed D1) could not
