@@ -114,9 +114,10 @@ def build_philgeps(contract_rows: list[str]) -> list[str]:
 
     df = (
         lf.select([
-            # `id` is an Arrow uuid extension; cast to String for the 'philgeps:'+id key.
-            # If polars surfaces it as Binary instead, use pl.col("id").bin.encode("hex").
-            pl.col("id").cast(pl.String),
+            # `id` is a UUID FIXED_LEN_BYTE_ARRAY(16); polars surfaces it as Binary (16 raw bytes)
+            # and cast(String) raises "invalid utf8". Hex-encode to a stable 32-char key string
+            # (verified against a duckdb-written UUID parquet, the same writer as the source).
+            pl.col("id").bin.encode("hex"),
             "reference_id", "award_title", "notice_title", "awardee_name",
             "organization_name", "area_of_delivery", "business_category",
             "contract_amount", "award_date",
@@ -124,7 +125,7 @@ def build_philgeps(contract_rows: list[str]) -> list[str]:
         .with_columns(pl.col("award_date").dt.year().alias("year"))
         .filter(pl.col("award_date").is_not_null() & pl.col("contract_amount").is_not_null())
         .filter((pl.col("year") >= mc.MIN_YEAR) & (pl.col("year") <= mc.MAX_YEAR))
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
     print(f"  PhilGEPS: {df.height} rows in window {mc.MIN_YEAR}-{mc.MAX_YEAR}")
 
