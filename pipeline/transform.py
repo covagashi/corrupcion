@@ -23,10 +23,24 @@ from __future__ import annotations
 import datetime as dt
 import json
 import pathlib
+import sys
 from collections import defaultdict
+
+# Allow `from pipeline import ...` whether this runs as `python pipeline/transform.py` (the script
+# dir lands on sys.path) or `python -m pipeline.transform` (repo root on sys.path).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+import polars as pl  # noqa: E402
+
+from pipeline import metric_config as mc  # noqa: E402
+from pipeline import philgeps as pg  # noqa: E402
+from pipeline import dpwh as dpwh_mod  # noqa: E402
+from pipeline.threshold_splitting import band_stats  # noqa: E402
 
 HERE = pathlib.Path(__file__).parent
 SOURCE = HERE / "sources" / "flood_control.json"
+PHILGEPS_SOURCE = HERE / "sources" / "philgeps.parquet"
+DPWH_SOURCE = HERE / "sources" / "dpwh_transparency_data.parquet"
 OUT = HERE / "out" / "contracts.sql"
 
 # Metric thresholds / weights (kept here so the methodology page can quote them verbatim).
@@ -89,6 +103,141 @@ def compute_flags(ratio: float | None, is_dominant: bool) -> tuple[list[str], in
     return flags, score
 
 
+def build_philgeps(contract_rows: list[str]) -> list[str]:
+    """Scan philgeps.parquet, compute the yearly threshold-splitting stat over ALL rows, and
+    return the threshold_splitting_yearly value tuples. Appends band contracts to contract_rows."""
+    if not PHILGEPS_SOURCE.exists():
+        print("  philgeps.parquet missing; skipping PhilGEPS (run fetch.py)")
+        return []
+
+    lf = pl.scan_parquet(PHILGEPS_SOURCE)
+    cols = set(lf.collect_schema().names())
+    assert cols == pg.EXPECTED_COLUMNS, f"PhilGEPS schema drift: {cols ^ pg.EXPECTED_COLUMNS}"
+
+    df = (
+        lf.select([
+            # `id` is a UUID FIXED_LEN_BYTE_ARRAY(16); polars surfaces it as Binary (16 raw bytes)
+            # and cast(String) raises "invalid utf8". Hex-encode to a stable 32-char key string
+            # (verified against a duckdb-written UUID parquet, the same writer as the source).
+            pl.col("id").bin.encode("hex"),
+            "reference_id", "award_title", "notice_title", "awardee_name",
+            "organization_name", "area_of_delivery", "business_category",
+            "contract_amount", "award_date",
+        ])
+        .with_columns(pl.col("award_date").dt.year().alias("year"))
+        .filter(pl.col("award_date").is_not_null() & pl.col("contract_amount").is_not_null())
+        .filter((pl.col("year") >= mc.MIN_YEAR) & (pl.col("year") <= mc.MAX_YEAR))
+        .collect(engine="streaming")
+    )
+    print(f"  PhilGEPS: {df.height} rows in window {mc.MIN_YEAR}-{mc.MAX_YEAR}")
+
+    band_low = mc.monitored_band_low()
+    yearly_rows: list[str] = []
+    band_count = 0
+    for year in range(mc.MIN_YEAR, mc.MAX_YEAR + 1):
+        amounts = df.filter(pl.col("year") == year)["contract_amount"].to_list()
+        if not amounts:
+            continue
+        s = band_stats(amounts, mc.THRESHOLD_T, mc.BIN_WIDTH, mc.BAND_ALPHA)
+        obs_c, obs_v = s["observed_count"], s["observed_value"]
+        exp_c = s["expected_count"]
+        if exp_c is None:
+            exp_v = excess_c = excess_v = None
+        else:
+            mean_band = (obs_v / obs_c) if obs_c else 0.0
+            exp_v = exp_c * mean_band
+            excess_c = obs_c - exp_c
+            excess_v = obs_v - exp_v
+        yearly_rows.append("(" + ", ".join(sql_str(v) for v in [
+            year, obs_c, round(obs_v, 2),
+            round(exp_c, 2) if exp_c is not None else None,
+            round(exp_v, 2) if exp_v is not None else None,
+            round(excess_c, 2) if excess_c is not None else None,
+            round(excess_v, 2) if excess_v is not None else None,
+            s["minor_total"],
+        ]) + ")")
+
+    # Persist only the monitored-band contracts as flagged rows.
+    band = df.filter(
+        (pl.col("contract_amount") >= band_low) & (pl.col("contract_amount") < mc.THRESHOLD_T)
+    )
+    for rec in band.iter_rows(named=True):
+        row = pg.map_row(rec)
+        row["risk_flags"] = [mc.BAND_FLAG]
+        row["risk_score"] = mc.BAND_WEIGHT
+        contract_rows.append(philgeps_row_sql(row))
+        band_count += 1
+    print(f"  PhilGEPS: {band_count} monitored-band contracts persisted")
+    return yearly_rows
+
+
+def philgeps_row_sql(row: dict) -> str:
+    """Render a mapped PhilGEPS row in the SAME column order as the contracts INSERT."""
+    values = [
+        row["id"], row["source"], row["project_id"], row["description"],
+        None, None,  # type_of_work, infra_type
+        row["contractor"],
+        None, row["province"], None, None, None, row["procuring_entity"],  # region..implementing_office
+        None, None,  # latitude, longitude
+        None, row["contract_cost"],  # abc, contract_cost
+        None, None, None, None,      # infra_year, funding_year, completion_year, start_date
+        None,                        # bid_to_ceiling_ratio
+        json.dumps(row["risk_flags"]), row["risk_score"],
+        row["award_date"], row["category"], row["procuring_entity"],  # NEW columns
+    ]
+    return "(" + ", ".join(sql_str(v) for v in values) + ")"
+
+
+def build_dpwh(contract_rows: list[str]) -> None:
+    """Scan dpwh_transparency_data.parquet, map projects to source='dpwh' rows, flag OVER_BUDGET,
+    and append them to contract_rows. Large infra contracts — no threshold-splitting applies."""
+    if not DPWH_SOURCE.exists():
+        print("  dpwh parquet missing; skipping DPWH (run fetch.py)")
+        return
+
+    lf = pl.scan_parquet(DPWH_SOURCE)
+    cols = set(lf.collect_schema().names())
+    assert cols == dpwh_mod.EXPECTED_COLUMNS, f"DPWH schema drift: {cols ^ dpwh_mod.EXPECTED_COLUMNS}"
+
+    df = (
+        lf.select([
+            "contractId", "description", "category", "contractor",
+            # `location` is a struct{province, region}; flatten it for the mapper.
+            pl.col("location").struct.field("province").alias("province"),
+            pl.col("location").struct.field("region").alias("region"),
+            "budget", "amountPaid", "startDate", "completionDate", "infraYear",
+            "latitude", "longitude",
+        ])
+        .collect(engine="streaming")
+    )
+    print(f"  DPWH: {df.height} projects")
+
+    flagged = 0
+    for rec in df.iter_rows(named=True):
+        row = dpwh_mod.map_row(rec)
+        if row["risk_score"] > 0:
+            flagged += 1
+        contract_rows.append(dpwh_row_sql(row))
+    print(f"  DPWH: {flagged} flagged (paid above approved budget)")
+
+
+def dpwh_row_sql(row: dict) -> str:
+    """Render a mapped DPWH row in the SAME column order as the contracts INSERT."""
+    values = [
+        row["id"], row["source"], row["project_id"], row["description"],
+        None, None,  # type_of_work, infra_type
+        row["contractor"],
+        row["region"], row["province"], None, None, None, None,  # region..implementing_office
+        row["latitude"], row["longitude"],
+        row["abc"], row["contract_cost"],
+        row["infra_year"], None, row["completion_year"], row["start_date"],  # infra/funding/completion/start
+        row["bid_to_ceiling_ratio"],
+        json.dumps(row["risk_flags"]), row["risk_score"],
+        None, row["category"], None,  # award_date, category, procuring_entity
+    ]
+    return "(" + ", ".join(sql_str(v) for v in values) + ")"
+
+
 def main() -> None:
     print(f"Reading {SOURCE} ...")
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
@@ -124,7 +273,8 @@ def main() -> None:
         "id, source, project_id, description, type_of_work, infra_type, contractor, "
         "region, province, municipality, legislative_district, district_engineering_office, "
         "implementing_office, latitude, longitude, abc, contract_cost, infra_year, funding_year, "
-        "completion_year, start_date, bid_to_ceiling_ratio, risk_flags, risk_score"
+        "completion_year, start_date, bid_to_ceiling_ratio, risk_flags, risk_score, "
+        "award_date, category, procuring_entity"
     )
     contract_rows: list[str] = []
     flag_tally: dict[str, int] = defaultdict(int)
@@ -164,6 +314,7 @@ def main() -> None:
             round(ratio, 6) if ratio is not None else None,
             json.dumps(flags),
             score,
+            None, None, None,  # award_date, category, procuring_entity (PhilGEPS-only columns)
         ]
         contract_rows.append("(" + ", ".join(sql_str(v) for v in values) + ")")
 
@@ -177,6 +328,14 @@ def main() -> None:
         row = [contractor, district, count, round(pair_value[pair], 2), round(pair_share[pair], 6)]
         stats_rows.append("(" + ", ".join(sql_str(v) for v in row) + ")")
 
+    # Pass 4: PhilGEPS — yearly threshold-splitting stat + monitored-band contracts.
+    print("Processing PhilGEPS ...")
+    yearly_rows = build_philgeps(contract_rows)
+
+    # Pass 5: DPWH infrastructure projects (source='dpwh', OVER_BUDGET flag).
+    print("Processing DPWH ...")
+    build_dpwh(contract_rows)
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as f:
         f.write("-- Generated by pipeline/transform.py. Do not edit by hand.\n")
@@ -187,6 +346,11 @@ def main() -> None:
         _write_batches(
             f, f"INSERT INTO contractor_district_stats ({stats_cols}) VALUES", stats_rows
         )
+        f.write("DELETE FROM threshold_splitting_yearly;\n")
+        if yearly_rows:
+            ts_cols = ("year, observed_count, observed_value, expected_count, expected_value, "
+                       "excess_count, excess_value, minor_total")
+            _write_batches(f, f"INSERT INTO threshold_splitting_yearly ({ts_cols}) VALUES", yearly_rows)
 
     size_kb = OUT.stat().st_size / 1024
     print(f"  -> {OUT} ({size_kb:.0f} KB)")

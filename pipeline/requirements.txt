@@ -1,2 +1,6 @@
-# fetch.py downloads the raw datasets; transform.py is pure stdlib.
+# fetch.py downloads the raw datasets.
 httpx>=0.27
+# transform.py reads the PhilGEPS parquet and computes the threshold-splitting metric.
+# >=1.25 for the `engine="streaming"` collect API used to scan the 5.48M-row parquet.
+polars>=1.25
+pytest>=8.0

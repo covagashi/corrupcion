@@ -27,6 +27,9 @@ CREATE TABLE contracts (
   funding_year                INTEGER,
   completion_year             INTEGER,
   start_date                  INTEGER, -- epoch ms
+  award_date                  INTEGER, -- epoch ms (PhilGEPS award date)
+  category                    TEXT,    -- PhilGEPS business_category
+  procuring_entity            TEXT,    -- PhilGEPS organization_name
   -- computed metric (see pipeline/transform.py)
   bid_to_ceiling_ratio        REAL,    -- contract_cost / abc
   risk_flags                  TEXT,    -- JSON array of flag codes, e.g. ["NEAR_CEILING"]
@@ -47,3 +50,18 @@ CREATE TABLE contractor_district_stats (
   district_value_share REAL NOT NULL, -- this contractor's share of the district's total value (0-1)
   PRIMARY KEY (contractor, legislative_district)
 );
+
+-- Threshold-splitting metric, precomputed per complete year (see pipeline/threshold_splitting.py).
+DROP TABLE IF EXISTS threshold_splitting_yearly;
+CREATE TABLE threshold_splitting_yearly (
+  year           INTEGER PRIMARY KEY,
+  observed_count INTEGER NOT NULL,
+  observed_value REAL    NOT NULL,
+  expected_count REAL,            -- NULL when too few bins to fit a tail
+  expected_value REAL,
+  excess_count   REAL,
+  excess_value   REAL,
+  minor_total    INTEGER NOT NULL
+);
+
+CREATE INDEX idx_contracts_source ON contracts (source);

@@ -1,7 +1,13 @@
 // Plain-language metadata for each risk flag. The codes and weights mirror pipeline/transform.py;
 // keep them in sync. Used by both the list and detail pages — explain every flag in one sentence.
 
-export type FlagCode = 'OVER_CEILING' | 'EXACT_CEILING' | 'NEAR_CEILING' | 'DISTRICT_DOMINANCE';
+export type FlagCode =
+	| 'OVER_CEILING'
+	| 'EXACT_CEILING'
+	| 'NEAR_CEILING'
+	| 'DISTRICT_DOMINANCE'
+	| 'BELOW_THRESHOLD_CLUSTER'
+	| 'OVER_BUDGET';
 
 export interface FlagInfo {
 	label: string;
@@ -39,6 +45,20 @@ export const FLAGS: Record<FlagCode, FlagInfo> = {
 			'The winning bid used up 99% or more of the approved budget, leaving the government almost no savings.',
 		weight: 5,
 		severity: 'low'
+	},
+	BELOW_THRESHOLD_CLUSTER: {
+		label: 'Priced just below the bidding threshold',
+		explanation:
+			'This contract’s amount sits just under the legal limit above which open competitive bidding becomes mandatory — a pattern that, across many contracts, can indicate splitting to avoid competition.',
+		weight: 20,
+		severity: 'medium'
+	},
+	OVER_BUDGET: {
+		label: 'Paid above the approved budget',
+		explanation:
+			'The amount disbursed for this infrastructure project exceeds its own approved budget — money paid out beyond what was authorized.',
+		weight: 40,
+		severity: 'high'
 	}
 };
 

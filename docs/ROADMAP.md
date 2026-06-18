@@ -61,13 +61,28 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 
 ## Phase 3 — Add the big contract datasets
 
-- [ ] PhilGEPS (`philgeps.parquet`, ~493 MB — all agencies) into the pipeline
-- [ ] DPWH Infrastructure (`dpwh_transparency_data.parquet`, ~21 MB)
-- [ ] Adapt the metric: add legal threshold-splitting detection (amounts clustered just below
-      RA 9184 / RA 12009 procurement thresholds — verify current threshold values before hardcoding).
-      Full statistic (observed vs expected under a smooth tail, excess count/value) specified in
-      [methodology.md](methodology.md#phase-3--threshold-splitting-planned-not-yet-implemented).
-- [ ] Unified search across all contracts (server-side, returns small HTML)
+- [x] PhilGEPS (`philgeps.parquet`, ~470 MB / 5.48M rows — all agencies) into the pipeline
+- [x] Adapt the metric: legal threshold-splitting detection — amounts clustered just below the
+      RA 9184 SVP threshold (`T = ₱1,000,000`, verified; RA 12009 raises it to ₱2,000,000 from 2025).
+      Full statistic (observed vs expected under a smooth log-linear tail, excess count/value) in
+      [methodology.md](methodology.md#phase-3--threshold-splitting-implemented). Surfaced as the
+      `BELOW_THRESHOLD_CLUSTER` flag plus the `/threshold-splitting` page.
+- [x] DPWH Infrastructure (`dpwh_transparency_data.parquet`, 248,220 projects) into the pipeline.
+      Schema verified; mapped to `source='dpwh'` rows with the `OVER_BUDGET` flag (amount paid >
+      approved budget). See [methodology.md](methodology.md#phase-3b--dpwh-infrastructure-projects-implemented).
+      (The Hugging Face download path in `fetch.py` still needs a live confirmation — see
+      [pending-data-run.md](pending-data-run.md).)
+- [x] Unified search across all contracts (server-side, returns small HTML). The list spans both
+      sources, with a Flood Control / PhilGEPS source filter; search matches contractor, description,
+      district, procuring entity, province and category; the list and detail pages render
+      source-appropriate fields (ceiling/ratio for flood control, agency/category/award year for
+      PhilGEPS).
+
+> **Not yet run:** the PhilGEPS pipeline + metric code and the front end are done and type-checked,
+> but the end-to-end data run (download `philgeps.parquet` → `transform.py` → seed D1) could not
+> execute in the web sandbox (egress blocks `huggingface.co`). Exact remaining steps and how to
+> finish them (CI / egress allowlist / logged-in machine) are in
+> [pending-data-run.md](pending-data-run.md).
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
 

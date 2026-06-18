@@ -28,10 +28,12 @@
 ### Task 1: Fetch PhilGEPS parquet + add polars dependency
 
 **Files:**
+
 - Modify: `pipeline/requirements.txt`
 - Modify: `pipeline/fetch.py`
 
 **Interfaces:**
+
 - Produces: `pipeline/sources/philgeps.parquet`, `pipeline/sources/awardees.parquet`, `pipeline/sources/organizations.parquet` on disk after `python pipeline/fetch.py`.
 
 - [ ] **Step 1: Add dependencies**
@@ -87,9 +89,11 @@ git commit -m "Phase 3a: download PhilGEPS parquet + add polars/pytest deps"
 ### Task 2: Verify and record the legal threshold `T`
 
 **Files:**
+
 - Create: `pipeline/metric_config.py`
 
 **Interfaces:**
+
 - Produces: `THRESHOLD_T: float`, `BIN_WIDTH: float`, `BAND_ALPHA: float`, `MIN_YEAR: int`, `MAX_YEAR: int`, `BAND_FLAG: str`, `BAND_WEIGHT: int`, `MONITORED_BAND_LOW(T)` — imported by `transform.py` and the tests.
 
 - [ ] **Step 1: Verify the current threshold**
@@ -148,17 +152,19 @@ git commit -m "Phase 3a: record verified threshold-splitting constants (T, band,
 ### Task 3: PhilGEPS row mapping + year filtering (pure functions)
 
 **Files:**
+
 - Create: `pipeline/philgeps.py`
 - Create: `pipeline/tests/__init__.py` (empty)
 - Test: `pipeline/tests/test_philgeps.py`
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces:
   - `to_epoch_ms(value) -> int | None` — converts a Python `datetime`/`date`/None to epoch ms.
   - `map_row(rec: dict) -> dict` — maps one parquet record (keys = parquet column names) to a
     `contracts`-shaped dict with keys: `id, source, project_id, description, contractor,
-    procuring_entity, category, province, contract_cost, award_date, risk_flags, risk_score`.
+procuring_entity, category, province, contract_cost, award_date, risk_flags, risk_score`.
     Sets `source='philgeps'`, `id='philgeps:'+rec['id']`, `award_date` as epoch ms.
   - `year_of(value) -> int | None` — calendar year from a datetime/date/None.
   - `EXPECTED_COLUMNS: set[str]` — the 12 parquet column names for the schema assertion.
@@ -297,10 +303,12 @@ git commit -m "Phase 3a: PhilGEPS row mapping helpers + tests"
 ### Task 4: Threshold-splitting statistic (histogram + tail fit + excess)
 
 **Files:**
+
 - Create: `pipeline/threshold_splitting.py`
 - Test: `pipeline/tests/test_threshold_splitting.py`
 
 **Interfaces:**
+
 - Consumes: constants from `pipeline.metric_config`.
 - Produces:
   - `histogram(amounts: list[float], T: float, bin_width: float) -> list[int]` — counts in bins
@@ -465,9 +473,11 @@ git commit -m "Phase 3a: threshold-splitting statistic (histogram, tail fit, exc
 ### Task 5: Wire PhilGEPS into transform.py (parquet scan → SQL emit)
 
 **Files:**
+
 - Modify: `pipeline/transform.py`
 
 **Interfaces:**
+
 - Consumes: `pipeline.philgeps` (`map_row`, `year_of`, `EXPECTED_COLUMNS`),
   `pipeline.threshold_splitting.band_stats`, `pipeline.metric_config` constants.
 - Produces: `out/contracts.sql` now also contains PhilGEPS band rows (in `contracts`) and a populated
@@ -615,9 +625,11 @@ git commit -m "Phase 3a: compute threshold-splitting over philgeps.parquet, emit
 ### Task 6: D1 schema — new columns + threshold_splitting_yearly
 
 **Files:**
+
 - Modify: `db/schema.sql`
 
 **Interfaces:**
+
 - Produces: `contracts` gains `award_date INTEGER`, `category TEXT`, `procuring_entity TEXT`;
   new table `threshold_splitting_yearly`.
 
@@ -656,12 +668,14 @@ CREATE INDEX idx_contracts_source ON contracts (source);
 - [ ] **Step 3: Apply to local D1 and verify**
 
 Run:
+
 ```bash
 npx wrangler d1 execute corrupcion-db --local --file=db/schema.sql --yes
 npx wrangler d1 execute corrupcion-db --local --file=pipeline/out/contracts.sql --yes
 npx wrangler d1 execute corrupcion-db --local --yes --command="SELECT source, COUNT(*) FROM contracts GROUP BY source;"
 npx wrangler d1 execute corrupcion-db --local --yes --command="SELECT COUNT(*) FROM threshold_splitting_yearly;"
 ```
+
 Expected: two source groups (`flood_control`, `philgeps`); the yearly table has one row per complete
 year in range with data.
 
@@ -677,9 +691,11 @@ git commit -m "Phase 3a: D1 schema — award_date/category/procuring_entity + th
 ### Task 7: Add the BELOW_THRESHOLD_CLUSTER flag (frontend metadata)
 
 **Files:**
+
 - Modify: `src/lib/flags.ts`
 
 **Interfaces:**
+
 - Produces: `FlagCode` includes `'BELOW_THRESHOLD_CLUSTER'`; `FLAGS` has its entry (weight 20, matches `metric_config.BAND_WEIGHT`).
 
 - [ ] **Step 1: Extend the flag union and map**
@@ -714,25 +730,27 @@ git commit -m "Phase 3a: add BELOW_THRESHOLD_CLUSTER flag metadata"
 ### Task 8: Server access — new fields, source filter, getThresholdSplitting
 
 **Files:**
+
 - Modify: `src/lib/server/contracts.ts`
 
 **Interfaces:**
+
 - Consumes: D1 tables from Task 6.
 - Produces:
   - `ContractRow` gains `award_date: number | null; category: string | null; procuring_entity: string | null;`
   - `listContracts(platform, opts)` accepts `opts.source?: 'flood_control' | 'philgeps'`.
   - `getThresholdSplitting(platform): Promise<ThresholdYear[]>` returning complete years ascending.
-  - `interface ThresholdYear { year; observed_count; observed_value; expected_count; expected_value; excess_count; excess_value; minor_total; }` (numbers; nullable for expected_/excess_).
+  - `interface ThresholdYear { year; observed_count; observed_value; expected_count; expected_value; excess_count; excess_value; minor_total; }` (numbers; nullable for expected*/excess*).
 
 - [ ] **Step 1: Extend ContractRow and the source filter**
 
 In `ContractRow` add the three fields. In `listContracts`, add to `opts` the `source?` field and:
 
 ```ts
-	if (opts.source) {
-		where.push(`source = ?${binds.length + 1}`);
-		binds.push(opts.source);
-	}
+if (opts.source) {
+	where.push(`source = ?${binds.length + 1}`);
+	binds.push(opts.source);
+}
 ```
 
 (Place this before building `whereSql`; ensure the `?N` index lines up — simplest is to push the
@@ -782,10 +800,12 @@ git commit -m "Phase 3a: server — ContractRow fields, source filter, getThresh
 ### Task 9: /threshold-splitting page (mobile-first, no chart library)
 
 **Files:**
+
 - Create: `src/routes/threshold-splitting/+page.server.ts`
 - Create: `src/routes/threshold-splitting/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `getThresholdSplitting` (Task 8), `formatPeso`/number helpers in `src/lib/format.ts`
   (reuse existing; if a peso formatter is absent, use `toLocaleString`).
 
@@ -828,8 +848,8 @@ skeleton:
 	<h1 class="text-2xl font-bold text-slate-900">Priced to dodge open bidding</h1>
 	<p class="mt-2 text-slate-600">
 		Above a legal peso limit, government contracts must go through open competitive bidding. When
-		many contracts cluster <em>just below</em> that limit, it can mean awards were split to stay
-		under it. Here is how many more such contracts we see than a normal price spread would predict.
+		many contracts cluster <em>just below</em> that limit, it can mean awards were split to stay under
+		it. Here is how many more such contracts we see than a normal price spread would predict.
 	</p>
 
 	<p class="mt-6 text-4xl font-extrabold text-slate-900">
@@ -842,19 +862,27 @@ skeleton:
 	<section class="mt-8 space-y-2">
 		{#each data.years as y (y.year)}
 			<div class="text-sm">
-				<div class="flex justify-between"><span>{y.year}</span>
-					<span class="text-slate-500">{y.excess_count == null ? '—' : Math.round(y.excess_count).toLocaleString('en-PH')}</span>
+				<div class="flex justify-between">
+					<span>{y.year}</span>
+					<span class="text-slate-500"
+						>{y.excess_count == null
+							? '—'
+							: Math.round(y.excess_count).toLocaleString('en-PH')}</span
+					>
 				</div>
 				<div class="h-2 rounded bg-slate-100">
-					<div class="h-2 rounded bg-amber-500" style="width: {((y.excess_count ?? 0) / maxExcess) * 100}%"></div>
+					<div
+						class="h-2 rounded bg-amber-500"
+						style="width: {((y.excess_count ?? 0) / maxExcess) * 100}%"
+					></div>
 				</div>
 			</div>
 		{/each}
 	</section>
 
 	<p class="mt-6 text-xs text-slate-500">
-		This is an indicator of possibly reduced competition, <strong>not proof</strong> of splitting or
-		wrongdoing in any individual contract.
+		This is an indicator of possibly reduced competition, <strong>not proof</strong> of splitting or wrongdoing
+		in any individual contract.
 	</p>
 
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
@@ -883,12 +911,14 @@ git commit -m "Phase 3a: /threshold-splitting analysis page (mobile-first, no ch
 ### Task 10: Wire it into the UI — source filter + footer links
 
 **Files:**
+
 - Modify: `src/routes/+page.server.ts`
 - Modify: `src/routes/+page.svelte`
 - Modify: `src/routes/contract/[id]/+page.svelte`
 - Modify: `src/routes/methodology/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `listContracts` `source` option (Task 8); the `/threshold-splitting` route (Task 9).
 
 - [ ] **Step 1: Pass the source filter from the home loader**
@@ -927,6 +957,7 @@ git commit -m "Phase 3a: home source filter + footer links to /threshold-splitti
 ### Task 11: Documentation
 
 **Files:**
+
 - Modify: `docs/methodology.md`
 - Modify: `docs/data-sources.md`
 - Modify: `docs/ROADMAP.md`
@@ -968,8 +999,8 @@ git commit -m "Phase 3a: docs — methodology, data-sources, roadmap, CLAUDE upd
 
 - [ ] `python -m pytest pipeline/ -v` — all green.
 - [ ] `python pipeline/fetch.py && python pipeline/transform.py` — produces `out/contracts.sql` with
-  both sources and the yearly table.
+      both sources and the yearly table.
 - [ ] Reseed local D1 (Task 6 commands) and `npm run check` — no type errors.
 - [ ] `npm run dev`: `/` lists both sources and filters; `/threshold-splitting` shows the headline
-  number + per-year bars; a PhilGEPS contract detail page shows the `BELOW_THRESHOLD_CLUSTER` flag.
+      number + per-year bars; a PhilGEPS contract detail page shows the `BELOW_THRESHOLD_CLUSTER` flag.
 - [ ] Flag weight 20 is consistent across `metric_config.py`, `flags.ts`, and `methodology.md`.

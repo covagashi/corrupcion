@@ -21,6 +21,16 @@ FLOOD_CONTROL_FALLBACK_URL = (
     "refs/heads/main/src/data/flood_control/flood_control.json"
 )
 
+# PhilGEPS bulk parquet on Hugging Face (CC0). philgeps.parquet is the main awarded-contracts
+# table (~470 MB, 5.48M rows). awardees/organizations are kept for Phase 4 (alignment), unused now.
+PHILGEPS_BASE = "https://huggingface.co/datasets/bettergovph/philgeps-data/resolve/main"
+PHILGEPS_FILES = ("philgeps.parquet", "awardees.parquet", "organizations.parquet")
+
+# DPWH infrastructure transparency data on Hugging Face (~248K projects). Verify the exact repo
+# path/filename if this 404s (the dataset is `bettergovph/dpwh-transparency-data`).
+DPWH_BASE = "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/resolve/main"
+DPWH_FILE = "dpwh_transparency_data.parquet"
+
 
 def resolve_download_url(dataset_id: int, fallback: str) -> str:
     """Ask the catalog API for a dataset's first resource download_url."""
@@ -52,6 +62,13 @@ def main() -> None:
     print("Fetching Flood Control dataset...")
     url = resolve_download_url(FLOOD_CONTROL_DATASET_ID, FLOOD_CONTROL_FALLBACK_URL)
     download(url, SOURCES / "flood_control.json")
+
+    print("Fetching PhilGEPS datasets...")
+    for name in PHILGEPS_FILES:
+        download(f"{PHILGEPS_BASE}/{name}", SOURCES / name)
+
+    print("Fetching DPWH infrastructure dataset...")
+    download(f"{DPWH_BASE}/{DPWH_FILE}", SOURCES / DPWH_FILE)
     print("Done.")
 
 
