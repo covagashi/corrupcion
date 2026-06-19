@@ -1,15 +1,22 @@
 import type { PageServerLoad } from './$types';
-import { getTotals, listContracts } from '$lib/server/contracts';
+import { getThresholdSplitting, getTotals, listProvinces } from '$lib/server/contracts';
 
-export const load: PageServerLoad = async ({ platform, url }) => {
-	const search = url.searchParams.get('q')?.trim() || '';
-	const flaggedOnly = url.searchParams.get('all') !== '1';
-	const source = url.searchParams.get('source') as 'flood_control' | 'philgeps' | 'dpwh' | null;
-
-	const [totals, result] = await Promise.all([
+export const load: PageServerLoad = async ({ platform }) => {
+	const [totals, provinces, years] = await Promise.all([
 		getTotals(platform),
-		listContracts(platform, { search, flaggedOnly, limit: 50, source: source ?? undefined })
+		listProvinces(platform),
+		getThresholdSplitting(platform)
 	]);
 
-	return { totals, contracts: result.rows, matched: result.total, search, flaggedOnly, source };
+	// Headline of the threshold-splitting metric, summed across the years we could estimate.
+	const excessCount = years.reduce((s, y) => s + (y.excess_count ?? 0), 0);
+	const excessValue = years.reduce((s, y) => s + (y.excess_value ?? 0), 0);
+
+	return {
+		totals,
+		topProvinces: provinces.slice(0, 12),
+		provinceCount: provinces.length,
+		excessCount,
+		excessValue
+	};
 };

@@ -1,149 +1,148 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
-	import { FLAGS, parseFlags, riskLabel } from '$lib/flags';
-	import { pesoShort, peso, percent } from '$lib/format';
+	import { peso, pesoShort } from '$lib/format';
 
 	let { data }: { data: PageData } = $props();
 
-	// Link that flips the flagged-only filter, preserving the current search term.
-	const toggleHref = $derived.by(() => {
-		const parts: string[] = [];
-		if (data.flaggedOnly) parts.push('all=1'); // currently flagged-only -> link shows all
-		if (data.search) parts.push(`q=${encodeURIComponent(data.search)}`);
-		if (data.source) parts.push(`source=${data.source}`);
-		const qs = parts.join('&');
-		return resolve(qs ? `/?${qs}` : '/');
-	});
+	const hasData = $derived(data.totals.contracts > 0);
+
+	function provinceHref(name: string) {
+		return resolve(`/contracts?province=${encodeURIComponent(name)}`);
+	}
 </script>
 
 <svelte:head>
-	<title>Philippine government contracts — irregularity check</title>
+	<title>Follow the money — Philippine government contracts</title>
 	<meta
 		name="description"
-		content="Philippine government contracts (flood control + PhilGEPS) ranked by simple, auditable irregularity flags."
+		content="See where Philippine public money goes. Government contracts (flood control, DPWH, PhilGEPS) checked for simple, auditable signs of irregularity — and browsable by your area."
 	/>
 </svelte:head>
 
 <main class="mx-auto max-w-screen-sm px-4 pb-16">
-	<header class="py-6">
-		<h1 class="text-xl font-bold text-slate-900">Government contracts</h1>
-		<p class="mt-1 text-sm text-slate-600">
-			{data.totals.contracts.toLocaleString()} contracts worth {peso(data.totals.totalValue)}.
-			{data.totals.flagged.toLocaleString()} carry at least one irregularity flag. Ranked most concerning
-			first.
+	<!-- Hero -->
+	<header class="pt-8 pb-6">
+		<h1 class="text-2xl leading-tight font-extrabold tracking-tight text-slate-900">
+			Where does the public money go?
+		</h1>
+		<p class="mt-2 text-base text-slate-600">
+			We collect Philippine government contracts and check each one for simple, auditable signs that
+			something is off — bids that hug the budget ceiling, one contractor dominating a district,
+			amounts parked just under the bidding limit. Plain numbers, no secret scores.
 		</p>
 	</header>
 
-	<form method="GET" class="mb-4 flex flex-wrap gap-2">
-		<input
-			type="search"
-			name="q"
-			value={data.search}
-			placeholder="Contractor, district or project…"
-			class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-		/>
-		{#if !data.flaggedOnly}<input type="hidden" name="all" value="1" />{/if}
-		<select
-			name="source"
-			value={data.source ?? ''}
-			class="rounded-lg border border-slate-300 px-2 py-2 text-sm text-slate-700"
-			aria-label="Filter by data source"
+	<!-- Headline numbers -->
+	{#if hasData}
+		<section class="grid grid-cols-3 gap-2 text-center">
+			<div class="rounded-xl border border-slate-200 bg-white p-3">
+				<div class="text-lg font-bold text-slate-900">{pesoShort(data.totals.totalValue)}</div>
+				<div class="mt-0.5 text-xs text-slate-500">in contracts tracked</div>
+			</div>
+			<div class="rounded-xl border border-slate-200 bg-white p-3">
+				<div class="text-lg font-bold text-slate-900">
+					{data.totals.contracts.toLocaleString()}
+				</div>
+				<div class="mt-0.5 text-xs text-slate-500">contracts</div>
+			</div>
+			<div class="rounded-xl border border-slate-200 bg-white p-3">
+				<div class="text-lg font-bold text-amber-700">{data.totals.flagged.toLocaleString()}</div>
+				<div class="mt-0.5 text-xs text-slate-500">carry a flag</div>
+			</div>
+		</section>
+	{:else}
+		<section
+			class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500"
 		>
-			<option value="">All sources</option>
-			<option value="flood_control">Flood Control</option>
-			<option value="philgeps">PhilGEPS</option>
-			<option value="dpwh">DPWH Infra</option>
-		</select>
-		<button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>
-	</form>
+			No contract data is loaded yet. Run the pipeline and seed the database (see <code
+				>docs/deploy.md</code
+			>).
+		</section>
+	{/if}
 
-	<div class="mb-4 text-sm">
-		<a class="text-blue-700 underline" href={toggleHref}>
-			{data.flaggedOnly
-				? 'Show all contracts (including unflagged)'
-				: 'Show only flagged contracts'}
-		</a>
-		<span class="ml-2 text-slate-500">{data.matched.toLocaleString()} match</span>
-	</div>
-
-	<ul class="space-y-3">
-		{#each data.contracts as c (c.id)}
-			{@const flags = parseFlags(c.risk_flags)}
-			<li>
-				<a
-					href={resolve('/contract/[id]', { id: c.id })}
-					class="block rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+	<!-- Find your area -->
+	{#if data.topProvinces.length}
+		<section class="mt-8">
+			<div class="flex items-baseline justify-between">
+				<h2 class="text-base font-bold text-slate-900">Find your area</h2>
+				<a href={resolve('/areas')} class="text-sm text-blue-700 underline"
+					>All {data.provinceCount} areas →</a
 				>
-					<div class="flex items-start justify-between gap-3">
-						<span class="text-sm font-semibold text-slate-900">{c.contractor ?? 'Unknown'}</span>
-						<span
-							class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-							class:bg-red-100={c.risk_score >= 60}
-							class:text-red-800={c.risk_score >= 60}
-							class:bg-amber-100={c.risk_score >= 30 && c.risk_score < 60}
-							class:text-amber-800={c.risk_score >= 30 && c.risk_score < 60}
-							class:bg-slate-100={c.risk_score < 30}
-							class:text-slate-700={c.risk_score < 30}
+			</div>
+			<p class="mt-1 text-sm text-slate-600">
+				Tap a province to see the contracts spent there, riskiest first.
+			</p>
+			<ul class="mt-3 grid grid-cols-2 gap-2">
+				{#each data.topProvinces as p (p.province)}
+					<li>
+						<a
+							href={provinceHref(p.province)}
+							class="block rounded-xl border border-slate-200 bg-white p-3 active:bg-slate-50"
 						>
-							{riskLabel(c.risk_score)}
-						</span>
-					</div>
-					<p class="mt-1 line-clamp-2 text-sm text-slate-600">{c.description ?? '—'}</p>
-					<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-						{#if c.source === 'philgeps'}
-							<span>{c.procuring_entity ?? c.province ?? 'PhilGEPS'}</span>
-							<span>•</span>
-							<span>{pesoShort(c.contract_cost)}</span>
-							{#if c.category}
-								<span>•</span>
-								<span>{c.category}</span>
-							{/if}
-						{:else if c.source === 'dpwh'}
-							<span>{c.province ?? c.region ?? 'DPWH'}</span>
-							<span>•</span>
-							<span>{pesoShort(c.abc)}</span>
-							{#if c.category}
-								<span>•</span>
-								<span>{c.category}</span>
-							{/if}
-						{:else}
-							<span>{c.legislative_district ?? '—'}</span>
-							<span>•</span>
-							<span>{pesoShort(c.contract_cost)}</span>
-							{#if c.bid_to_ceiling_ratio != null}
-								<span>•</span>
-								<span>{percent(c.bid_to_ceiling_ratio)} of ceiling</span>
-							{/if}
-						{/if}
-					</div>
-					{#if flags.length}
-						<div class="mt-2 flex flex-wrap gap-1">
-							{#each flags as f (f)}
-								<span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700"
-									>{FLAGS[f].label}</span
-								>
-							{/each}
-						</div>
+							<div class="truncate text-sm font-semibold text-slate-900">{p.province}</div>
+							<div class="mt-0.5 text-xs text-slate-500">
+								{pesoShort(p.value)} · {p.flagged.toLocaleString()} flagged
+							</div>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
+	<!-- Explore -->
+	<section class="mt-8 space-y-3">
+		<h2 class="text-base font-bold text-slate-900">Explore</h2>
+
+		<a
+			href={resolve('/contracts')}
+			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+		>
+			<span>
+				<span class="block text-sm font-semibold text-slate-900">Browse all contracts</span>
+				<span class="mt-0.5 block text-xs text-slate-500"
+					>Search every source, ranked most concerning first.</span
+				>
+			</span>
+			<span class="text-slate-400">→</span>
+		</a>
+
+		<a
+			href={resolve('/threshold-splitting')}
+			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+		>
+			<span>
+				<span class="block text-sm font-semibold text-slate-900">Priced to dodge open bidding</span>
+				<span class="mt-0.5 block text-xs text-slate-500">
+					{#if data.excessCount > 0}
+						~{Math.round(data.excessCount).toLocaleString()} extra contracts ({peso(
+							data.excessValue
+						)}) sit just below the bidding threshold.
+					{:else}
+						How many contracts cluster just below the legal bidding limit.
 					{/if}
-				</a>
-			</li>
-		{:else}
-			<li
-				class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500"
-			>
-				No contracts match your search.
-			</li>
-		{/each}
-	</ul>
+				</span>
+			</span>
+			<span class="text-slate-400">→</span>
+		</a>
+
+		<a
+			href={resolve('/methodology')}
+			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+		>
+			<span>
+				<span class="block text-sm font-semibold text-slate-900">How we flag contracts</span>
+				<span class="mt-0.5 block text-xs text-slate-500"
+					>Every flag, in one plain sentence. No black box.</span
+				>
+			</span>
+			<span class="text-slate-400">→</span>
+		</a>
+	</section>
 
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
-		Source: DPWH Flood Control Projects (via BetterGov). Flags are simple, auditable statistics —
-		they indicate patterns worth reviewing, not proof of wrongdoing.
-		<a href={resolve('/methodology')} class="text-blue-700 underline">How we flag contracts</a>
-		·
-		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
-			>Below-threshold pricing</a
-		>.
+		Sources: DPWH Flood Control, DPWH Infrastructure and PhilGEPS (via BetterGov). Flags are simple,
+		auditable statistics — they indicate patterns worth reviewing, not proof of wrongdoing.
 	</footer>
 </main>

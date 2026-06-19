@@ -20,7 +20,7 @@
 </svelte:head>
 
 <main class="mx-auto max-w-screen-sm px-4 pb-16">
-	<a href={resolve('/')} class="inline-block py-4 text-sm text-blue-700 underline"
+	<a href={resolve('/contracts')} class="inline-block py-4 text-sm text-blue-700 underline"
 		>← All contracts</a
 	>
 

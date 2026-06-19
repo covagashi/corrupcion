@@ -96,6 +96,12 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 - [x] Public methodology page (`/methodology`, plain-language, linked from every footer; flag
       definitions rendered from the same `$lib/flags` source the app uses). Dev-facing spec in
       [methodology.md](methodology.md).
+- [x] **Landing page + "find your area" browse.** `/` is now a plain-language landing (headline
+      numbers, threshold-splitting teaser, navigation cards) instead of a bare list; the full list
+      moved to `/contracts`. New `/areas` page groups contracts by **province** (the one location
+      field every source carries — flood-control/DPWH province, PhilGEPS area-of-delivery) so people
+      can open their own zone; province cards/links feed `/contracts?province=…`. Server side:
+      `listProvinces()` aggregate + a `province` filter on `listContracts()`, `idx_contracts_province`.
 - [ ] Map view of flagged projects (lat/long already in the data)
 - [ ] Performance pass for low-end mobile (payload size, no heavy JS)
 

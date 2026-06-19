@@ -65,3 +65,4 @@ CREATE TABLE threshold_splitting_yearly (
 );
 
 CREATE INDEX idx_contracts_source ON contracts (source);
+CREATE INDEX idx_contracts_province ON contracts (province); -- "find your area" browse

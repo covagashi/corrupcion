@@ -32,7 +32,7 @@ Done from a logged-in machine (`wrangler` OAuth, account `clopez@tuta.io`):
 - Created the `corrupcion-db` D1 instance; its real `database_id`
   (`7c485949-e604-4b12-aef4-488207ccf74a`) is committed in `wrangler.jsonc`.
 - Seeded **remote** D1 with all 300,304 rows (dpwh 248,220 / philgeps 42,229 / flood_control 9,855)
-  + the 13-year `threshold_splitting_yearly` table.
+  - the 13-year `threshold_splitting_yearly` table.
 - `npm run build` + `npx wrangler deploy` → **live at https://corrupcion.clopez-5fd.workers.dev**;
   `/`, `/threshold-splitting`, `/methodology`, `/?source=philgeps` all return 200 with real data.
 - Set the `CLOUDFLARE_ACCOUNT_ID` GitHub repo secret.
@@ -54,6 +54,10 @@ machine. The site is already live without it.
   source should have its **Parquet/JSON schema verified before mapping** (the PhilGEPS UUID bug is a
   reminder of why blind mapping is risky).
 - **Phase 5 — Polish.**
+  - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
+    moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`
+    (`listProvinces()` + `province` filter + `idx_contracts_province`). Type-checked + built here;
+    not yet visually verified against seeded data (sandbox D1 is empty — same constraint as Phase 3).
   - _Map view of flagged projects._ Now feasible — flood-control and DPWH rows carry `latitude` /
     `longitude` — but a map adds client-side JS, which trades off against the mobile-first /
     minimal-JS design rule. Decide the approach (static markers vs. a tile library) before building.
