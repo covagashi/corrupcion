@@ -56,11 +56,19 @@ machine. The site is already live without it.
     running the pipeline here and seeding a **local** D1 (1,173 rows; search + chamber filter +
     detail all render). Remote seed/deploy still runs from a logged-in/CI machine (deploy.md +
     refresh.yml updated to build + load `congress.sql`).
-  - _The actual alignment join is blocked._ Open Congress `Person` carries no electoral district
-    (only senate/house membership), so legislators cannot be tied to a contract's area. SALN is
-    reachable but national-only and its names live in Firebase (not in the repo). The Ateneo
-    dynasties dataset is on `data.bettergov.ph` (sandbox-blocked, 403). SEC company ownership has no
-    public API. Verifying each source's schema **before mapping** confirmed these gaps up front.
+  - _Officials ↔ contracts by area — DONE (code), data run deferred._ The Raw Philippine Data
+    `memberships` table has the missing geographic key (province / locality + position + year).
+    `pipeline/officials.py` builds `officials` + `official_terms`; `fetch.py` downloads the two HF
+    parquets. The contract detail page shows "who held office in this area" via `getAreaOfficials`
+    (province-wide + town-level, best term per person near the contract year). `/officials` +
+    `/official/[id]` added. **Verified with a local fixture** (synthetic officials/terms + a
+    matching contract → the area panel rendered and linked correctly); the real seed needs the HF
+    parquets, which the sandbox cannot reach (`huggingface.co` 403) — run on a logged-in/CI machine,
+    same as Phase 3. `normalize_place` (Python) and `normalizePlace` (TS) must stay identical.
+  - _Open Congress legislators_ stay as a separate bills-focused directory (no district there).
+  - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
+    `data.bettergov.ph`, 403). Place-name matching for the area join is exact-after-normalize — an
+    alias table would improve recall.
 - **Phase 5 — Polish.**
   - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
     moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`

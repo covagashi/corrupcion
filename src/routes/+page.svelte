@@ -145,6 +145,24 @@
 		</a>
 
 		<a
+			href={resolve('/officials')}
+			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+		>
+			<span>
+				<span class="block text-sm font-semibold text-slate-900">Public officials</span>
+				<span class="mt-0.5 block text-xs text-slate-500">
+					{#if data.officialCount > 0}
+						{data.officialCount.toLocaleString()} governors, mayors and representatives — and where they
+						held office.
+					{:else}
+						Governors, mayors and representatives, and the areas they governed.
+					{/if}
+				</span>
+			</span>
+			<span class="text-slate-400">→</span>
+		</a>
+
+		<a
 			href={resolve('/methodology')}
 			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
 		>

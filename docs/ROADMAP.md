@@ -90,16 +90,22 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
       Congress TOML data (1,173 senators/representatives, 8th–20th Congress) into a `legislators`
       table; UI at `/legislators` (search + Senate/House filter) and `/legislator/[id]` (chambers &
       congresses served). Verified end-to-end on a seeded local D1.
-- [ ] Politicians ↔ contracts **by district** — **blocked**: the Open Congress `Person` schema has
-      no electoral district (only senate/house membership per congress), so there is no key to join
-      a representative to the contracts in their area. SALN is reachable but national-only (78
-      records, no names in the repo — they live in Firebase). Needs a district-level source.
+- [x] **Officials ↔ contracts by area.** The Raw Philippine Data `memberships` table carries the
+      geographic key Open Congress lacked (region / province / locality + position + year), so
+      `pipeline/officials.py` builds `officials` + `official_terms` and the contract detail page now
+      shows **"who held office in this area"** (province governor / representatives + town mayor,
+      near the contract's year). Browse at `/officials`, profiles at `/official/[id]`. Matching is
+      on normalized province/locality names (`normalize_place` mirrored in `$lib/officials.ts`), so
+      it is best-effort where names differ between sources. Code type-checked + join verified on a
+      local fixture; the real data run (HF parquet) is deferred (sandbox blocks huggingface.co).
 - [ ] Company owners: SEC records; link contractors to incorporators/owners — no public API / no
       reachable bulk source yet.
 - [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
       `data.bettergov.ph`, which the web sandbox cannot reach (403).
-- [ ] Alignment views: "who represents this district + who won the contracts here + who owns them"
-      — depends on the three blocked items above.
+- [ ] Stronger place-name matching (the officials↔contracts join is exact-after-normalize today);
+      a province/locality alias table would catch more.
+- [ ] Budget side: the GAA dataset (3.7M appropriation rows by agency/region) for an
+      appropriated-vs-awarded comparison.
 
 ## Phase 5 — Polish
 

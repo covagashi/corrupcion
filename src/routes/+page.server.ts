@@ -1,13 +1,15 @@
 import type { PageServerLoad } from './$types';
 import { getThresholdSplitting, getTotals, listProvinces } from '$lib/server/contracts';
 import { getLegislatorTotals } from '$lib/server/legislators';
+import { getOfficialCount } from '$lib/server/officials';
 
 export const load: PageServerLoad = async ({ platform }) => {
-	const [totals, provinces, years, legislators] = await Promise.all([
+	const [totals, provinces, years, legislators, officialCount] = await Promise.all([
 		getTotals(platform),
 		listProvinces(platform),
 		getThresholdSplitting(platform),
-		getLegislatorTotals(platform)
+		getLegislatorTotals(platform),
+		getOfficialCount(platform)
 	]);
 
 	// Headline of the threshold-splitting metric, summed across the years we could estimate.
@@ -20,6 +22,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 		provinceCount: provinces.length,
 		excessCount,
 		excessValue,
-		legislatorCount: legislators.total
+		legislatorCount: legislators.total,
+		officialCount
 	};
 };

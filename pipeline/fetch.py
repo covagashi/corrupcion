@@ -36,6 +36,11 @@ PHILGEPS_FILES = ("philgeps.parquet", "awardees.parquet", "organizations.parquet
 DPWH_BASE = "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/resolve/main"
 DPWH_FILE = "dpwh_transparency_data.parquet"
 
+# Raw Philippine Data (CC0) — public officials + their memberships. memberships carries the
+# province/locality + position + year that Phase 4 alignment joins against contract provinces.
+RAW_PH_BASE = "https://huggingface.co/datasets/bettergovph/raw-philippine-data/resolve/main"
+RAW_PH_FILES = ("persons.parquet", "memberships.parquet")
+
 
 def resolve_download_url(dataset_id: int, fallback: str) -> str:
     """Ask the catalog API for a dataset's first resource download_url."""
@@ -97,6 +102,10 @@ def main() -> None:
 
     print("Fetching Open Congress data (legislators)...")
     clone_open_congress()
+
+    print("Fetching Raw Philippine Data (officials + memberships)...")
+    for name in RAW_PH_FILES:
+        download(f"{RAW_PH_BASE}/{name}", SOURCES / name)
     print("Done.")
 
 

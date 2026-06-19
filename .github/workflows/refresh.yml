@@ -38,6 +38,8 @@ jobs:
         run: python pipeline/transform.py
       - name: Build legislators directory
         run: python pipeline/congress.py
+      - name: Build public officials directory
+        run: python pipeline/officials.py
 
       # --- Build the Worker ---
       - uses: actions/setup-node@v4
@@ -59,5 +61,7 @@ jobs:
         run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/contracts.sql --yes
       - name: Load legislators into D1
         run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/congress.sql --yes
+      - name: Load officials into D1
+        run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/officials.sql --yes
       - name: Deploy Worker
         run: npx wrangler deploy
