@@ -30,13 +30,15 @@ Commit that change, then `npm run gen` (regenerates Worker types after a `wrangl
 ## Option A — deploy manually (logged-in machine)
 
 ```sh
-# pipeline (Python) -> out/contracts.sql
-python pipeline/fetch.py
-python pipeline/transform.py
+# pipeline (Python) -> out/contracts.sql + out/congress.sql
+python pipeline/fetch.py        # also clones open-congress-data into pipeline/sources/
+python pipeline/transform.py    # -> out/contracts.sql
+python pipeline/congress.py     # -> out/congress.sql (legislators directory)
 
 # load the remote D1 (schema first, then rows) and ship
 npx wrangler d1 execute corrupcion-db --remote --file=db/schema.sql --yes
 npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/contracts.sql --yes
+npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/congress.sql --yes
 npm run build && npx wrangler deploy
 ```
 

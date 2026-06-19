@@ -86,10 +86,20 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
 
-- [ ] Politicians: Open Congress + SALN data; link by LegislativeDistrict / location
-- [ ] Company owners: SEC records; link contractors to incorporators/owners
-- [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context
+- [x] **Legislators directory** (the politicians leg). `pipeline/congress.py` parses the Open
+      Congress TOML data (1,173 senators/representatives, 8th–20th Congress) into a `legislators`
+      table; UI at `/legislators` (search + Senate/House filter) and `/legislator/[id]` (chambers &
+      congresses served). Verified end-to-end on a seeded local D1.
+- [ ] Politicians ↔ contracts **by district** — **blocked**: the Open Congress `Person` schema has
+      no electoral district (only senate/house membership per congress), so there is no key to join
+      a representative to the contracts in their area. SALN is reachable but national-only (78
+      records, no names in the repo — they live in Firebase). Needs a district-level source.
+- [ ] Company owners: SEC records; link contractors to incorporators/owners — no public API / no
+      reachable bulk source yet.
+- [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
+      `data.bettergov.ph`, which the web sandbox cannot reach (403).
 - [ ] Alignment views: "who represents this district + who won the contracts here + who owns them"
+      — depends on the three blocked items above.
 
 ## Phase 5 — Polish
 

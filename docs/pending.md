@@ -49,10 +49,18 @@ machine. The site is already live without it.
 
 ## 3. Remaining roadmap phases (not started)
 
-- **Phase 4 — Alignment (contracts ↔ politicians ↔ owners).** Needs the Open Congress, SALN and SEC
-  datasets and a data model linking districts/contractors to officials and company owners. Each new
-  source should have its **Parquet/JSON schema verified before mapping** (the PhilGEPS UUID bug is a
-  reminder of why blind mapping is risky).
+- **Phase 4 — Alignment (contracts ↔ politicians ↔ owners).**
+  - _Legislators directory — DONE._ `pipeline/congress.py` ingests the Open Congress TOML data
+    (cloned by `fetch.py` into `pipeline/sources/open-congress-data`) → 1,173 legislators →
+    `out/congress.sql` → `legislators` table. UI: `/legislators` + `/legislator/[id]`. Verified by
+    running the pipeline here and seeding a **local** D1 (1,173 rows; search + chamber filter +
+    detail all render). Remote seed/deploy still runs from a logged-in/CI machine (deploy.md +
+    refresh.yml updated to build + load `congress.sql`).
+  - _The actual alignment join is blocked._ Open Congress `Person` carries no electoral district
+    (only senate/house membership), so legislators cannot be tied to a contract's area. SALN is
+    reachable but national-only and its names live in Firebase (not in the repo). The Ateneo
+    dynasties dataset is on `data.bettergov.ph` (sandbox-blocked, 403). SEC company ownership has no
+    public API. Verifying each source's schema **before mapping** confirmed these gaps up front.
 - **Phase 5 — Polish.**
   - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
     moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`

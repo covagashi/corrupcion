@@ -85,10 +85,24 @@
 		</p>
 	</section>
 
+	<section class="mt-6">
+		<h2 class="text-base font-semibold text-slate-900">Legislators</h2>
+		<p class="mt-2 text-sm text-slate-600">
+			We also publish a <a href={resolve('/legislators')} class="text-blue-700 underline"
+				>directory of senators and representatives</a
+			>
+			from the community-maintained Open Congress dataset (sourced from senate.gov.ph and congress.gov.ph).
+			It records which chambers and congresses each person served in. It does
+			<strong>not</strong> include the electoral district a representative held — that field is not in
+			the data — so we deliberately do not (yet) link legislators to the contracts awarded in their area.
+			Doing that honestly needs a district-level source we do not have.
+		</p>
+	</section>
+
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts + DPWH infrastructure
-		transparency data (via BetterGov). Our methodology is public and adapts the approach of
-		contractes.cat to Philippine data.
+		transparency data + Open Congress (via BetterGov). Our methodology is public and adapts the
+		approach of contractes.cat to Philippine data.
 		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
 			>Below-threshold pricing</a
 		>.

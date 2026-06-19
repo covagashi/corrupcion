@@ -66,3 +66,24 @@ CREATE TABLE threshold_splitting_yearly (
 
 CREATE INDEX idx_contracts_source ON contracts (source);
 CREATE INDEX idx_contracts_province ON contracts (province); -- "find your area" browse
+
+-- Legislators directory (Phase 4 — politicians). One row per senator/representative, built
+-- offline by pipeline/congress.py from the Open Congress dataset. Note: the source carries NO
+-- geographic district, so legislators are NOT joined to contracts by area here.
+DROP TABLE IF EXISTS legislators;
+CREATE TABLE legislators (
+  id              TEXT PRIMARY KEY,
+  full_name       TEXT NOT NULL,
+  first_name      TEXT,
+  last_name       TEXT,
+  positions       TEXT,             -- "Senator" | "Representative" | "Senator, Representative"
+  is_senator      INTEGER NOT NULL DEFAULT 0,
+  is_rep          INTEGER NOT NULL DEFAULT 0,
+  congresses      TEXT,             -- JSON array of {number, ordinal, chamber}
+  first_congress  INTEGER,
+  latest_congress INTEGER,
+  aliases         TEXT              -- JSON array of strings
+);
+
+CREATE INDEX idx_legislators_name   ON legislators (last_name);
+CREATE INDEX idx_legislators_latest ON legislators (latest_congress DESC);

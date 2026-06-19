@@ -128,6 +128,23 @@
 		</a>
 
 		<a
+			href={resolve('/legislators')}
+			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
+		>
+			<span>
+				<span class="block text-sm font-semibold text-slate-900">Legislators</span>
+				<span class="mt-0.5 block text-xs text-slate-500">
+					{#if data.legislatorCount > 0}
+						{data.legislatorCount.toLocaleString()} senators and representatives, 8th–20th Congress.
+					{:else}
+						Senators and representatives and the congresses they served.
+					{/if}
+				</span>
+			</span>
+			<span class="text-slate-400">→</span>
+		</a>
+
+		<a
 			href={resolve('/methodology')}
 			class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 active:bg-slate-50"
 		>
