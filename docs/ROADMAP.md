@@ -137,8 +137,13 @@ province/locality**, not legislative district — see the deviations section abo
       reachable bulk source yet.
 - [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
       `data.bettergov.ph`, which the web sandbox cannot reach (403).
-- [ ] Stronger place-name matching (the officials↔contracts join is exact-after-normalize today);
-      a province/locality alias table would catch more.
+- [x] Stronger place-name matching: a shared `src/lib/place-aliases.json` drives province aliases
+      (NCR/Metro Manila, Compostela Valley→Davao de Oro, parenthetical disambiguation, …) + locality
+      rules ("City of X"→x, drop parentheticals, Sto./Sta./Gen. expansion) in both the pipeline
+      (`pipeline/place_norm.py`) and the Worker (`normalizeProvince`/`normalizeLocality` in
+      `$lib/officials`). A shared fixture (`pipeline/test/place-cases.json`) is asserted from both
+      languages (`npm run test:place`). **Follow-up:** the alias set is seeded from PH geography, not
+      the (unreachable) real data — re-check recall against the seeded D1 on a logged-in/CI machine.
 - [ ] Budget side: the GAA dataset (3.7M appropriation rows by agency/region) for an
       appropriated-vs-awarded comparison.
 

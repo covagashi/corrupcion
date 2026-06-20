@@ -66,9 +66,15 @@ machine. The site is already live without it.
     parquets, which the sandbox cannot reach (`huggingface.co` 403) — run on a logged-in/CI machine,
     same as Phase 3. `normalize_place` (Python) and `normalizePlace` (TS) must stay identical.
   - _Open Congress legislators_ stay as a separate bills-focused directory (no district there).
+  - _Place-name matching — DONE._ A shared `src/lib/place-aliases.json` now canonicalizes province
+    names (aliases: NCR/Metro Manila, Compostela Valley→Davao de Oro, parenthetical disambiguation)
+    and municipalities (rules: "City of X"→x, drop parentheticals, Sto./Sta./Gen. expansion) before
+    keying the area join, in both the pipeline (`pipeline/place_norm.py`) and the Worker
+    (`normalizeProvince`/`normalizeLocality`). A shared fixture is asserted from both languages
+    (`npm run test:place`). _Follow-up:_ the alias set is seeded from PH geography, not the
+    (unreachable) real data — re-check recall against the seeded D1 on a logged-in/CI machine.
   - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
-    `data.bettergov.ph`, 403). Place-name matching for the area join is exact-after-normalize — an
-    alias table would improve recall.
+    `data.bettergov.ph`, 403).
 - **Phase 5 — Polish.**
   - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
     moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`

@@ -1,7 +1,12 @@
 // Server-only D1 access for public officials + the contract↔official area alignment.
 // Rows are precomputed by pipeline/officials.py from the Raw Philippine Data persons/memberships.
 import { error } from '@sveltejs/kit';
-import { normalizePlace, positionRank, type OfficialTerm } from '$lib/officials';
+import {
+	normalizeProvince,
+	normalizeLocality,
+	positionRank,
+	type OfficialTerm
+} from '$lib/officials';
 
 export interface OfficialRow {
 	id: string;
@@ -122,9 +127,9 @@ export async function getAreaOfficials(
 	platform: App.Platform | undefined,
 	opts: { province: string | null; locality?: string | null; year?: number | null }
 ): Promise<AreaOfficials> {
-	const pkey = normalizePlace(opts.province);
+	const pkey = normalizeProvince(opts.province);
 	if (!pkey) return { provinceWide: [], local: [] };
-	const lkey = normalizePlace(opts.locality);
+	const lkey = normalizeLocality(opts.locality);
 	const ref = opts.year ?? null;
 
 	// Pull all terms in the province (province-wide rows have province_key set). Capped — a

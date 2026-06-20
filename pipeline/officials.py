@@ -9,7 +9,8 @@ Two tables drive Phase 4 alignment:
 memberships is the breakthrough: unlike the Open Congress data, it carries a geographic key
 (province / locality) + position + year. We store one `official_terms` row per membership with a
 NORMALIZED province/locality key, so the Worker can match a contract's province to the officials
-who held office there. `normalize_place` MUST stay identical to the TS copy in
+who held office there. The province/locality keys come from place_norm (shared alias data in
+src/lib/place-aliases.json); keep it identical to normalizeProvince/normalizeLocality in
 src/lib/officials.ts, or the join silently misses.
 
 Run AFTER fetch.py. Emits plain SQL loaded into D1 after db/schema.sql.
@@ -19,10 +20,11 @@ from __future__ import annotations
 
 import json
 import pathlib
-import re
 from collections import defaultdict
 
 import polars as pl
+
+from place_norm import normalize_locality, normalize_province
 
 HERE = pathlib.Path(__file__).parent
 PERSONS_SOURCE = HERE / "sources" / "persons.parquet"
@@ -33,16 +35,6 @@ ROWS_PER_INSERT = 50  # D1 rejects over-long statements (SQLITE_TOOBIG); keep ba
 
 PERSON_COLUMNS = {"id", "first_name", "last_name", "name_suffix"}
 MEMBERSHIP_COLUMNS = {"id", "person_id", "party", "region", "province", "locality", "position", "year"}
-
-_WS = re.compile(r"\s+")
-
-
-def normalize_place(value: object) -> str | None:
-    """Lowercase, trim, collapse inner whitespace. Keep identical to src/lib/officials.ts."""
-    if value is None:
-        return None
-    s = _WS.sub(" ", str(value).strip().lower())
-    return s or None
 
 
 def sql_str(v: object) -> str:
@@ -126,7 +118,7 @@ def main() -> None:
 
         values = [
             m["id"], pid, name or None, m.get("party"), m.get("region"), province, locality,
-            position, year, normalize_place(province), normalize_place(locality),
+            position, year, normalize_province(province), normalize_locality(locality),
         ]
         term_rows.append("(" + ", ".join(sql_str(v) for v in values) + ")")
 
