@@ -1,6 +1,14 @@
 // Shared (client + server) types and helpers for public officials (Phase 4 alignment).
 // DB access is in $lib/server/officials.ts; these helpers carry no secrets.
 
+import aliases from './place-aliases.json';
+
+const PROVINCE_ALIASES = aliases.provinceAliases as Record<string, string>;
+const LOCALITY_PREFIXES = aliases.localityPrefixes as string[];
+const LOCALITY_ABBREV = aliases.localityAbbrev as Record<string, string>;
+
+const PAREN = /\s*\([^)]*\)/g;
+
 export interface OfficialTerm {
 	id: string;
 	person_id: string;
@@ -20,6 +28,40 @@ export interface OfficialTerm {
 export function normalizePlace(value: string | null | undefined): string | null {
 	if (value == null) return null;
 	const s = value.trim().toLowerCase().replace(/\s+/g, ' ');
+	return s || null;
+}
+
+function stripParen(s: string): string {
+	return s.replace(PAREN, '').replace(/\s+/g, ' ').trim();
+}
+
+/** Province key: base → drop parentheticals → province alias. Mirror of normalize_province (Python). */
+export function normalizeProvince(value: string | null | undefined): string | null {
+	const base = normalizePlace(value);
+	if (base == null) return null;
+	const s = stripParen(base);
+	if (!s) return null;
+	return PROVINCE_ALIASES[s] ?? s;
+}
+
+/** Locality key: base → drop parentheticals/prefix/trailing " city" → expand abbrev. Mirror of normalize_locality (Python). */
+export function normalizeLocality(value: string | null | undefined): string | null {
+	const base = normalizePlace(value);
+	if (base == null) return null;
+	let s = stripParen(base);
+	for (const prefix of LOCALITY_PREFIXES) {
+		if (s.startsWith(prefix)) {
+			s = s.slice(prefix.length);
+			break;
+		}
+	}
+	if (s.endsWith(' city')) s = s.slice(0, -' city'.length);
+	const sp = s.indexOf(' ');
+	const first = sp === -1 ? s : s.slice(0, sp);
+	if (LOCALITY_ABBREV[first]) {
+		s = sp === -1 ? LOCALITY_ABBREV[first] : `${LOCALITY_ABBREV[first]}${s.slice(sp)}`;
+	}
+	s = s.replace(/\s+/g, ' ').trim();
 	return s || null;
 }
 
