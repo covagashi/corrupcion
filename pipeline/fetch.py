@@ -38,7 +38,8 @@ DPWH_FILE = "dpwh_transparency_data.parquet"
 
 # Raw Philippine Data (CC0) — public officials + their memberships. memberships carries the
 # province/locality + position + year that Phase 4 alignment joins against contract provinces.
-RAW_PH_BASE = "https://huggingface.co/datasets/bettergovph/raw-philippine-data/resolve/main"
+# The parquets live under databases/ in the repo (not the root); verified 2026-06-20.
+RAW_PH_BASE = "https://huggingface.co/datasets/bettergovph/raw-philippine-data/resolve/main/databases"
 RAW_PH_FILES = ("persons.parquet", "memberships.parquet")
 
 
