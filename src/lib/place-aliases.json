@@ -1,0 +1,11 @@
+{
+  "provinceAliases": {
+    "metro manila": "ncr",
+    "national capital region": "ncr",
+    "compostela valley": "davao de oro",
+    "north cotabato": "cotabato",
+    "western samar": "samar"
+  },
+  "localityPrefixes": ["city of ", "municipality of ", "mun. of "],
+  "localityAbbrev": { "sto.": "santo", "sta.": "santa", "gen.": "general" }
+}

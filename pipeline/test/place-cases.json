@@ -1,0 +1,25 @@
+{
+  "province": [
+    { "value": "Metro Manila", "key": "ncr" },
+    { "value": "National Capital Region", "key": "ncr" },
+    { "value": "NCR", "key": "ncr" },
+    { "value": "Compostela Valley", "key": "davao de oro" },
+    { "value": "North Cotabato", "key": "cotabato" },
+    { "value": "Cotabato (North Cotabato)", "key": "cotabato" },
+    { "value": "Cebu", "key": "cebu" },
+    { "value": "  Davao   del Sur ", "key": "davao del sur" },
+    { "value": "", "key": null },
+    { "value": null, "key": null }
+  ],
+  "locality": [
+    { "value": "City of Manila", "key": "manila" },
+    { "value": "Davao City", "key": "davao" },
+    { "value": "Quezon City", "key": "quezon" },
+    { "value": "Municipality of Sto. Tomas", "key": "santo tomas" },
+    { "value": "City of San Fernando (Pampanga)", "key": "san fernando" },
+    { "value": "Mun. of Gen. Trias", "key": "general trias" },
+    { "value": "Tagum", "key": "tagum" },
+    { "value": "", "key": null },
+    { "value": null, "key": null }
+  ]
+}
