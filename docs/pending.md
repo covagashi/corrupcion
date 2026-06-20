@@ -32,7 +32,7 @@ Done from a logged-in machine (`wrangler` OAuth, account `clopez@tuta.io`):
 - Created the `corrupcion-db` D1 instance; its real `database_id`
   (`7c485949-e604-4b12-aef4-488207ccf74a`) is committed in `wrangler.jsonc`.
 - Seeded **remote** D1 with all 300,304 rows (dpwh 248,220 / philgeps 42,229 / flood_control 9,855)
-  + the 13-year `threshold_splitting_yearly` table.
+  - the 13-year `threshold_splitting_yearly` table.
 - `npm run build` + `npx wrangler deploy` → **live at https://corrupcion.clopez-5fd.workers.dev**;
   `/`, `/threshold-splitting`, `/methodology`, `/?source=philgeps` all return 200 with real data.
 - Set the `CLOUDFLARE_ACCOUNT_ID` GitHub repo secret.
@@ -49,11 +49,31 @@ machine. The site is already live without it.
 
 ## 3. Remaining roadmap phases (not started)
 
-- **Phase 4 — Alignment (contracts ↔ politicians ↔ owners).** Needs the Open Congress, SALN and SEC
-  datasets and a data model linking districts/contractors to officials and company owners. Each new
-  source should have its **Parquet/JSON schema verified before mapping** (the PhilGEPS UUID bug is a
-  reminder of why blind mapping is risky).
+- **Phase 4 — Alignment (contracts ↔ politicians ↔ owners).**
+  - _Legislators directory — DONE._ `pipeline/congress.py` ingests the Open Congress TOML data
+    (cloned by `fetch.py` into `pipeline/sources/open-congress-data`) → 1,173 legislators →
+    `out/congress.sql` → `legislators` table. UI: `/legislators` + `/legislator/[id]`. Verified by
+    running the pipeline here and seeding a **local** D1 (1,173 rows; search + chamber filter +
+    detail all render). Remote seed/deploy still runs from a logged-in/CI machine (deploy.md +
+    refresh.yml updated to build + load `congress.sql`).
+  - _Officials ↔ contracts by area — DONE (code), data run deferred._ The Raw Philippine Data
+    `memberships` table has the missing geographic key (province / locality + position + year).
+    `pipeline/officials.py` builds `officials` + `official_terms`; `fetch.py` downloads the two HF
+    parquets. The contract detail page shows "who held office in this area" via `getAreaOfficials`
+    (province-wide + town-level, best term per person near the contract year). `/officials` +
+    `/official/[id]` added. **Verified with a local fixture** (synthetic officials/terms + a
+    matching contract → the area panel rendered and linked correctly); the real seed needs the HF
+    parquets, which the sandbox cannot reach (`huggingface.co` 403) — run on a logged-in/CI machine,
+    same as Phase 3. `normalize_place` (Python) and `normalizePlace` (TS) must stay identical.
+  - _Open Congress legislators_ stay as a separate bills-focused directory (no district there).
+  - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
+    `data.bettergov.ph`, 403). Place-name matching for the area join is exact-after-normalize — an
+    alias table would improve recall.
 - **Phase 5 — Polish.**
+  - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
+    moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`
+    (`listProvinces()` + `province` filter + `idx_contracts_province`). Type-checked + built here;
+    not yet visually verified against seeded data (sandbox D1 is empty — same constraint as Phase 3).
   - _Map view of flagged projects._ Now feasible — flood-control and DPWH rows carry `latitude` /
     `longitude` — but a map adds client-side JS, which trades off against the mobile-first /
     minimal-JS design rule. Decide the approach (static markers vs. a tile library) before building.

@@ -21,7 +21,7 @@
 </svelte:head>
 
 <main class="mx-auto max-w-screen-sm px-4 pb-16">
-	<a href={resolve('/')} class="inline-block py-4 text-sm text-blue-700 underline"
+	<a href={resolve('/contracts')} class="inline-block py-4 text-sm text-blue-700 underline"
 		>← All contracts</a
 	>
 
@@ -85,10 +85,38 @@
 		</p>
 	</section>
 
+	<section class="mt-6">
+		<h2 class="text-base font-semibold text-slate-900">Legislators</h2>
+		<p class="mt-2 text-sm text-slate-600">
+			We also publish a <a href={resolve('/legislators')} class="text-blue-700 underline"
+				>directory of senators and representatives</a
+			>
+			from the community-maintained Open Congress dataset (sourced from senate.gov.ph and congress.gov.ph).
+			It records which chambers and congresses each person served in. It does
+			<strong>not</strong> include the electoral district a representative held — that field is not in
+			the data — so we deliberately do not (yet) link legislators to the contracts awarded in their area.
+			Doing that honestly needs a district-level source we do not have.
+		</p>
+	</section>
+
+	<section class="mt-6">
+		<h2 class="text-base font-semibold text-slate-900">Officials in an area</h2>
+		<p class="mt-2 text-sm text-slate-600">
+			On a contract we show <a href={resolve('/officials')} class="text-blue-700 underline"
+				>public officials</a
+			>
+			— governors, mayors, representatives — who held office in that contract's province (and town) around
+			its year. We match on the <strong>province / locality name</strong> recorded for each office,
+			near the contract's year. It is plain context: it shows who was in office, and
+			<strong>never</strong> implies any official was involved in the contract. Matching depends on place
+			names lining up between the two sources, so the list can be incomplete.
+		</p>
+	</section>
+
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts + DPWH infrastructure
-		transparency data (via BetterGov). Our methodology is public and adapts the approach of
-		contractes.cat to Philippine data.
+		transparency data + Open Congress + Raw Philippine Data officials (via BetterGov). Our
+		methodology is public and adapts the approach of contractes.cat to Philippine data.
 		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
 			>Below-threshold pricing</a
 		>.

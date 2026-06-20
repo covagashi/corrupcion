@@ -18,6 +18,38 @@ Cloudflare Worker (SvelteKit SSR) -> reads D1 -> small HTML to mobile
 Heavy work happens offline in CI; the Worker only reads precomputed rows. The catalog API is a
 **discovery layer used by the pipeline**, never called at request time. Verified working 2026-06-15.
 
+## Deviations from the original plan (updated 2026-06-19)
+
+What actually got built differs from the first plan in a few important ways. Recording them here so
+the checklist below reads honestly.
+
+- **UI was restructured (Phase 5, user-requested).** The original plan put a single contract list at
+  `/`. The site is now a plain-language **landing at `/`**, with the searchable list **moved to
+  `/contracts`** and a new **`/areas`** province browser ("find your area"). `province` became the
+  one location key shared across all contract sources.
+- **Phase 4 alignment pivoted from "by legislative district" to "by province / locality".** The
+  original goal — join contracts to representatives by `LegislativeDistrict` — is **not supported by
+  the available politician data**: the Open Congress `Person` record carries no district. So the work
+  split in two:
+  - Open Congress became a **standalone legislators directory** (`/legislators`), deliberately *not*
+    joined to contracts.
+  - The real contract↔official alignment uses a **different dataset, Raw Philippine Data** (its
+    `memberships` table has province / locality + position + year), matched on **province/locality
+    name near the contract's year** — not by district.
+- **Two politician datasets are kept separate on purpose:** `legislators` (Open Congress,
+  bills/chamber-focused, national) vs `officials` (Raw PH Data, local governors/mayors with a
+  geographic key). They are not merged.
+- **Ingestion now also uses `git clone`, not only Parquet/JSON download.** `fetch.py` shallow-clones
+  `open-congress-data` (one TOML per entity) alongside the Hugging Face parquet downloads.
+- **Owners (SEC) and the Ateneo dynasties dataset are blocked, not merely unstarted.** SEC has no
+  public API / reachable bulk source; the dynasties dataset lives on `data.bettergov.ph`, which the
+  web sandbox cannot reach (403).
+- **Verification reality.** Legislators and the area-alignment join were verified against a **seeded
+  local D1** (real Open Congress clone; a synthetic fixture for the officials join). The full
+  PhilGEPS / DPWH / officials data runs that need `huggingface.co` are **deferred** to a
+  logged-in/CI machine — sandbox egress blocks HF. See [pending.md](pending.md) /
+  [pending-data-run.md](pending-data-run.md).
+
 ## Phase 0 — Base ✅ (done)
 
 - [x] SvelteKit + TS + Tailwind + Cloudflare Workers adapter scaffolded
@@ -84,18 +116,43 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 > finish them (CI / egress allowlist / logged-in machine) are in
 > [pending-data-run.md](pending-data-run.md).
 
-## Phase 4 — Alignment (contracts ↔ politicians ↔ owners)
+## Phase 4 — Alignment (contracts ↔ politicians ↔ owners) — partial
 
-- [ ] Politicians: Open Congress + SALN data; link by LegislativeDistrict / location
-- [ ] Company owners: SEC records; link contractors to incorporators/owners
-- [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context
-- [ ] Alignment views: "who represents this district + who won the contracts here + who owns them"
+Politicians leg done (two ways); owners + dynasties blocked. The headline join is now **by
+province/locality**, not legislative district — see the deviations section above.
+
+- [x] **Legislators directory** (the politicians leg). `pipeline/congress.py` parses the Open
+      Congress TOML data (1,173 senators/representatives, 8th–20th Congress) into a `legislators`
+      table; UI at `/legislators` (search + Senate/House filter) and `/legislator/[id]` (chambers &
+      congresses served). Verified end-to-end on a seeded local D1.
+- [x] **Officials ↔ contracts by area.** The Raw Philippine Data `memberships` table carries the
+      geographic key Open Congress lacked (region / province / locality + position + year), so
+      `pipeline/officials.py` builds `officials` + `official_terms` and the contract detail page now
+      shows **"who held office in this area"** (province governor / representatives + town mayor,
+      near the contract's year). Browse at `/officials`, profiles at `/official/[id]`. Matching is
+      on normalized province/locality names (`normalize_place` mirrored in `$lib/officials.ts`), so
+      it is best-effort where names differ between sources. Code type-checked + join verified on a
+      local fixture; the real data run (HF parquet) is deferred (sandbox blocks huggingface.co).
+- [ ] Company owners: SEC records; link contractors to incorporators/owners — no public API / no
+      reachable bulk source yet.
+- [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
+      `data.bettergov.ph`, which the web sandbox cannot reach (403).
+- [ ] Stronger place-name matching (the officials↔contracts join is exact-after-normalize today);
+      a province/locality alias table would catch more.
+- [ ] Budget side: the GAA dataset (3.7M appropriation rows by agency/region) for an
+      appropriated-vs-awarded comparison.
 
 ## Phase 5 — Polish
 
 - [x] Public methodology page (`/methodology`, plain-language, linked from every footer; flag
       definitions rendered from the same `$lib/flags` source the app uses). Dev-facing spec in
       [methodology.md](methodology.md).
+- [x] **Landing page + "find your area" browse.** `/` is now a plain-language landing (headline
+      numbers, threshold-splitting teaser, navigation cards) instead of a bare list; the full list
+      moved to `/contracts`. New `/areas` page groups contracts by **province** (the one location
+      field every source carries — flood-control/DPWH province, PhilGEPS area-of-delivery) so people
+      can open their own zone; province cards/links feed `/contracts?province=…`. Server side:
+      `listProvinces()` aggregate + a `province` filter on `listContracts()`, `idx_contracts_province`.
 - [ ] Map view of flagged projects (lat/long already in the data)
 - [ ] Performance pass for low-end mobile (payload size, no heavy JS)
 

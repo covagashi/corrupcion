@@ -8,11 +8,16 @@ we fall back to the known direct URL if the catalog is unreachable.
 from __future__ import annotations
 
 import pathlib
+import subprocess
 
 import httpx
 
 SOURCES = pathlib.Path(__file__).parent / "sources"
 CATALOG = "https://data.bettergov.ph/api/v1"
+
+# Open Congress data (TOML, CC0) — the legislators directory source. Cloned, not downloaded:
+# it is one TOML file per entity. Person + congress entities are all congress.py needs.
+OPEN_CONGRESS_REPO = "https://github.com/bettergovph/open-congress-data.git"
 
 # Dataset id 2 = "Flood Control Projects Dashboard data" (verified 2026-06-15)
 FLOOD_CONTROL_DATASET_ID = 2
@@ -30,6 +35,11 @@ PHILGEPS_FILES = ("philgeps.parquet", "awardees.parquet", "organizations.parquet
 # path/filename if this 404s (the dataset is `bettergovph/dpwh-transparency-data`).
 DPWH_BASE = "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/resolve/main"
 DPWH_FILE = "dpwh_transparency_data.parquet"
+
+# Raw Philippine Data (CC0) — public officials + their memberships. memberships carries the
+# province/locality + position + year that Phase 4 alignment joins against contract provinces.
+RAW_PH_BASE = "https://huggingface.co/datasets/bettergovph/raw-philippine-data/resolve/main"
+RAW_PH_FILES = ("persons.parquet", "memberships.parquet")
 
 
 def resolve_download_url(dataset_id: int, fallback: str) -> str:
@@ -58,6 +68,26 @@ def download(url: str, dest: pathlib.Path) -> None:
     print(f"  -> {dest} ({dest.stat().st_size / 1_048_576:.1f} MB)")
 
 
+def clone_open_congress() -> None:
+    """Shallow-clone the Open Congress data repo (only the entity TOMLs we parse)."""
+    dest = SOURCES / "open-congress-data"
+    SOURCES.mkdir(parents=True, exist_ok=True)
+    if (dest / ".git").is_dir():
+        print(f"  updating {dest}")
+        subprocess.run(["git", "-C", str(dest), "pull", "--ff-only"], check=True)
+        return
+    print(f"  cloning {OPEN_CONGRESS_REPO}")
+    subprocess.run(
+        ["git", "clone", "--depth", "1", "--filter=blob:none", "--sparse",
+         OPEN_CONGRESS_REPO, str(dest)],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(dest), "sparse-checkout", "set", "data/person", "data/congress"],
+        check=True,
+    )
+
+
 def main() -> None:
     print("Fetching Flood Control dataset...")
     url = resolve_download_url(FLOOD_CONTROL_DATASET_ID, FLOOD_CONTROL_FALLBACK_URL)
@@ -69,6 +99,13 @@ def main() -> None:
 
     print("Fetching DPWH infrastructure dataset...")
     download(f"{DPWH_BASE}/{DPWH_FILE}", SOURCES / DPWH_FILE)
+
+    print("Fetching Open Congress data (legislators)...")
+    clone_open_congress()
+
+    print("Fetching Raw Philippine Data (officials + memberships)...")
+    for name in RAW_PH_FILES:
+        download(f"{RAW_PH_BASE}/{name}", SOURCES / name)
     print("Done.")
 
 

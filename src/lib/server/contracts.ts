@@ -67,6 +67,7 @@ export async function listContracts(
 		flaggedOnly?: boolean;
 		limit?: number;
 		source?: 'flood_control' | 'philgeps' | 'dpwh';
+		province?: string;
 	}
 ): Promise<ListResult> {
 	const limit = Math.min(opts.limit ?? 50, 100);
@@ -74,6 +75,10 @@ export async function listContracts(
 	const binds: unknown[] = [];
 
 	if (opts.flaggedOnly) where.push('risk_score > 0');
+	if (opts.province) {
+		where.push(`province = ?${binds.length + 1}`);
+		binds.push(opts.province);
+	}
 	if (opts.search) {
 		// One bound parameter, matched across the columns that carry a name across both sources
 		// (flood-control districts + PhilGEPS procuring entity / category / province).
@@ -154,6 +159,36 @@ export async function getTotals(platform: App.Platform | undefined): Promise<Tot
 		flagged: row?.flagged ?? 0,
 		totalValue: row?.totalValue ?? 0
 	};
+}
+
+export interface ProvinceStat {
+	province: string;
+	count: number;
+	flagged: number;
+	value: number;
+}
+
+/**
+ * Contracts grouped by province — the one location field every source carries
+ * (flood-control + DPWH region/province, PhilGEPS area-of-delivery). Powers the
+ * "find your area" browse. Biggest spenders first.
+ */
+export async function listProvinces(platform: App.Platform | undefined): Promise<ProvinceStat[]> {
+	const res = await db(platform)
+		.prepare(
+			'SELECT province, COUNT(*) AS count, ' +
+				'SUM(CASE WHEN risk_score > 0 THEN 1 ELSE 0 END) AS flagged, ' +
+				'SUM(contract_cost) AS value FROM contracts ' +
+				"WHERE province IS NOT NULL AND TRIM(province) != '' " +
+				'GROUP BY province ORDER BY value DESC, count DESC'
+		)
+		.all<ProvinceStat>();
+	return (res.results ?? []).map((r) => ({
+		province: r.province,
+		count: r.count ?? 0,
+		flagged: r.flagged ?? 0,
+		value: r.value ?? 0
+	}));
 }
 
 export interface ThresholdYear {

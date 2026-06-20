@@ -18,7 +18,7 @@
 </svelte:head>
 
 <main class="mx-auto max-w-screen-sm px-4 pb-16">
-	<a href={resolve('/')} class="inline-block py-4 text-sm text-blue-700 underline"
+	<a href={resolve('/contracts')} class="inline-block py-4 text-sm text-blue-700 underline"
 		>← All contracts</a
 	>
 
@@ -160,6 +160,46 @@
 			{/if}
 		</dl>
 	</section>
+
+	{#if data.areaOfficials.provinceWide.length || data.areaOfficials.local.length}
+		<section class="mt-6">
+			<h2 class="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+				Who held office in this area
+			</h2>
+			<p class="mt-1 text-xs text-slate-500">
+				Officials recorded for {[c.municipality, c.province]
+					.filter(Boolean)
+					.join(', ')}{#if data.areaYear}
+					around {data.areaYear}{/if}. This shows who was in office — it does
+				<strong>not</strong> imply any involvement in this contract.
+			</p>
+			<ul class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+				{#each [...data.areaOfficials.provinceWide, ...data.areaOfficials.local] as o (o.person_id + o.position)}
+					<li>
+						<a
+							href={resolve('/official/[id]', { id: o.person_id })}
+							class="flex items-center justify-between gap-3 p-3 active:bg-slate-50"
+						>
+							<span class="min-w-0">
+								<span class="block truncate text-sm font-semibold text-slate-900"
+									>{o.full_name ?? 'Unknown'}</span
+								>
+								<span class="mt-0.5 block text-xs text-slate-500">
+									{o.position ?? '—'}{#if o.locality}
+										of {o.locality}{/if}
+									{#if o.party}
+										· {o.party}{/if}
+									{#if o.year}
+										· {o.year}{/if}
+								</span>
+							</span>
+							<span class="shrink-0 text-slate-400">→</span>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Flags are simple, auditable statistics — they indicate patterns worth reviewing, not proof of
