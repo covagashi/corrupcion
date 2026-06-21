@@ -42,10 +42,13 @@ the 125 MB dump and hung with 0 rows written; `pipeline/split_sql.py` splits it 
 statement-aligned chunks that seed reliably via the direct batched API. Re-seeds should use the
 chunk loop, not a single `--file`.
 
-**Still optional — `CLOUDFLARE_API_TOKEN`** for hands-off CI (`Refresh data & deploy` workflow):
-wrangler OAuth can't mint it, so create it in the Cloudflare dashboard (Edit Cloudflare Workers
-template + `D1 · Edit`) and add it as a repo secret. Until then, re-deploys run from a logged-in
-machine. The site is already live without it.
+**Decided 2026-06-21 — skip `CLOUDFLARE_API_TOKEN` / hands-off CI; refresh with wrangler instead.**
+wrangler has no command to mint a Cloudflare API token (only OAuth `login`/`whoami`; `wrangler secret`
+is for Worker secrets), and that token was only needed for the unattended monthly cron. So the
+`Refresh data & deploy` workflow stays unused, and data refreshes / deploys run from this
+logged-in machine with the wrangler steps in [deploy.md](deploy.md) Option A (chunked seed +
+`wrangler deploy`). If hands-off CI is ever wanted, the only missing piece is creating that token in
+the Cloudflare dashboard (Edit Cloudflare Workers template + `D1 · Edit`) and `gh secret set`-ting it.
 
 ## 3. Remaining roadmap phases (not started)
 
