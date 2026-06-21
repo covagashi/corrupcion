@@ -54,14 +54,25 @@ jobs:
         run: npm run build
 
       # --- Load D1 (schema first, then the rows) and deploy ---
-      # Both files are idempotent: schema.sql drops+recreates, contracts.sql deletes+inserts.
+      # All SQL is idempotent: schema.sql drops+recreates, the row dumps delete+insert.
+      # The big dumps (contracts ~122 MB, officials ~21 MB) must be chunked: a single --file of
+      # that size switches wrangler to the R2-upload import API, which hangs / 500s. ~5 MB chunks
+      # stay on the reliable direct batched API. congress.sql / schema.sql are small -> direct.
       - name: Apply D1 schema
         run: npx wrangler d1 execute corrupcion-db --remote --file=db/schema.sql --yes
-      - name: Load contracts into D1
-        run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/contracts.sql --yes
+      - name: Load contracts into D1 (chunked)
+        run: |
+          python pipeline/split_sql.py pipeline/out/contracts.sql pipeline/out/chunks
+          for f in pipeline/out/chunks/chunk_*.sql; do
+            npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes
+          done
       - name: Load legislators into D1
         run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/congress.sql --yes
-      - name: Load officials into D1
-        run: npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/officials.sql --yes
+      - name: Load officials into D1 (chunked)
+        run: |
+          python pipeline/split_sql.py pipeline/out/officials.sql pipeline/out/chunks-officials
+          for f in pipeline/out/chunks-officials/chunk_*.sql; do
+            npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes
+          done
       - name: Deploy Worker
         run: npx wrangler deploy

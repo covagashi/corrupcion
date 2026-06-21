@@ -142,8 +142,9 @@ province/locality**, not legislative district — see the deviations section abo
       rules ("City of X"→x, drop parentheticals, Sto./Sta./Gen. expansion) in both the pipeline
       (`pipeline/place_norm.py`) and the Worker (`normalizeProvince`/`normalizeLocality` in
       `$lib/officials`). A shared fixture (`pipeline/test/place-cases.json`) is asserted from both
-      languages (`npm run test:place`). **Follow-up:** the alias set is seeded from PH geography, not
-      the (unreachable) real data — re-check recall against the seeded D1 on a logged-in/CI machine.
+      languages (`npm run test:place`). **Verified on real data + LIVE 2026-06-21:** seeded to remote
+      D1 (45,424 officials / 86,234 terms) and deployed; recall check shows the aliases newly match 4
+      provinces / 537 contracts (Davao de Oro, Cotabato, Samar variants) that were empty before.
 - [ ] Budget side: the GAA dataset (3.7M appropriation rows by agency/region) for an
       appropriated-vs-awarded comparison.
 

@@ -36,13 +36,29 @@ python pipeline/transform.py    # -> out/contracts.sql
 python pipeline/congress.py     # -> out/congress.sql   (legislators directory)
 python pipeline/officials.py    # -> out/officials.sql  (public officials + area alignment)
 
-# load the remote D1 (schema first, then rows) and ship
+# load the remote D1 (schema first, then rows) and ship. The big dumps (contracts ~122 MB,
+# officials ~21 MB) MUST be chunked — a single --file of that size flips wrangler to the R2-upload
+# import API, which hangs / 500s. split_sql.py cuts ~5 MB statement-aligned chunks that seed
+# reliably via the direct batched API. congress.sql / schema.sql are small enough for direct --file.
 npx wrangler d1 execute corrupcion-db --remote --file=db/schema.sql --yes
-npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/contracts.sql --yes
+
+python pipeline/split_sql.py pipeline/out/contracts.sql pipeline/out/chunks
+for f in pipeline/out/chunks/chunk_*.sql; do
+  npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes; done
+
 npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/congress.sql --yes
-npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/officials.sql --yes
+
+python pipeline/split_sql.py pipeline/out/officials.sql pipeline/out/chunks-officials
+for f in pipeline/out/chunks-officials/chunk_*.sql; do
+  npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes; done
+
 npm run build && npx wrangler deploy
 ```
+
+> **Additive option (no contracts re-seed):** if the live DB already holds contracts and you only
+> need to add the Phase 4 officials/legislators tables, create just those (skip the contracts
+> drop/recreate) and seed `congress.sql` + chunked `officials.sql`. This is how the 2026-06-21
+> deploy was done so the 300K already-seeded contracts weren't touched.
 
 ## Option B — deploy from CI (no local Node)
 
@@ -60,10 +76,10 @@ deploy → Run workflow**. After the first success the monthly cron keeps the da
 
 ## Notes
 
-- `db/schema.sql` and `pipeline/out/contracts.sql` are both idempotent (drop+recreate / delete+insert),
-  so re-running is safe.
-- Remote `d1 execute --file` of the ~6 MB dump is fine but not instant; if it ever gets unwieldy,
-  switch the data step to `wrangler d1 import`.
+- `db/schema.sql` and the `pipeline/out/*.sql` dumps are all idempotent (drop+recreate /
+  delete+insert), so re-running is safe.
+- Seed the big dumps (`contracts.sql`, `officials.sql`) via `split_sql.py` chunks, not a single
+  `--file` (see the load block above) — large `--file` flips to the R2 import API and hangs / 500s.
 - **Network:** `pipeline/fetch.py` downloads the bulk datasets from `huggingface.co`. CI runners and
   normal dev machines reach it fine; the Claude-Code-on-the-web sandbox does not unless the host is
   added to the environment's egress allowlist. See [pending-data-run.md](pending-data-run.md).

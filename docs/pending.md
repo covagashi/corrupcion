@@ -50,29 +50,30 @@ machine. The site is already live without it.
 ## 3. Remaining roadmap phases (not started)
 
 - **Phase 4 — Alignment (contracts ↔ politicians ↔ owners).**
-  - _Legislators directory — DONE._ `pipeline/congress.py` ingests the Open Congress TOML data
-    (cloned by `fetch.py` into `pipeline/sources/open-congress-data`) → 1,173 legislators →
-    `out/congress.sql` → `legislators` table. UI: `/legislators` + `/legislator/[id]`. Verified by
-    running the pipeline here and seeding a **local** D1 (1,173 rows; search + chamber filter +
-    detail all render). Remote seed/deploy still runs from a logged-in/CI machine (deploy.md +
-    refresh.yml updated to build + load `congress.sql`).
-  - _Officials ↔ contracts by area — DONE (code), data run deferred._ The Raw Philippine Data
-    `memberships` table has the missing geographic key (province / locality + position + year).
-    `pipeline/officials.py` builds `officials` + `official_terms`; `fetch.py` downloads the two HF
-    parquets. The contract detail page shows "who held office in this area" via `getAreaOfficials`
-    (province-wide + town-level, best term per person near the contract year). `/officials` +
-    `/official/[id]` added. **Verified with a local fixture** (synthetic officials/terms + a
-    matching contract → the area panel rendered and linked correctly); the real seed needs the HF
-    parquets, which the sandbox cannot reach (`huggingface.co` 403) — run on a logged-in/CI machine,
-    same as Phase 3. `normalize_place` (Python) and `normalizePlace` (TS) must stay identical.
+  - _Legislators directory — DONE + LIVE 2026-06-21._ `pipeline/congress.py` ingests the Open
+    Congress TOML data (cloned by `fetch.py` into `pipeline/sources/open-congress-data`) → 1,173
+    legislators → `out/congress.sql` → `legislators` table. UI: `/legislators` + `/legislator/[id]`.
+    Seeded to **remote** D1 (1,173 rows) and deployed; `/legislators` returns 200 in production.
+  - _Officials ↔ contracts by area — DONE + LIVE 2026-06-21._ The Raw Philippine Data `memberships`
+    table has the missing geographic key (province / locality + position + year). `pipeline/officials.py`
+    builds `officials` + `official_terms`. The contract detail page shows "who held office in this
+    area" via `getAreaOfficials`. **Real-data run executed on the original PC** (HF is reachable here):
+    45,424 officials / 86,234 terms → seeded to remote D1 (chunked) and deployed. Verified live: a
+    Davao de Oro contract's area panel now lists the province's governors/mayors (empty before the
+    aliases). **`fetch.py` bug fixed** along the way — the Raw PH parquets live under `databases/`,
+    not the dataset root, so this run had never actually worked. `normalize_province`/`normalize_locality`
+    (Python, in `place_norm.py`) and `normalizeProvince`/`normalizeLocality` (TS) must stay identical
+    (guarded by `npm run test:place`).
   - _Open Congress legislators_ stay as a separate bills-focused directory (no district there).
   - _Place-name matching — DONE._ A shared `src/lib/place-aliases.json` now canonicalizes province
     names (aliases: NCR/Metro Manila, Compostela Valley→Davao de Oro, parenthetical disambiguation)
     and municipalities (rules: "City of X"→x, drop parentheticals, Sto./Sta./Gen. expansion) before
     keying the area join, in both the pipeline (`pipeline/place_norm.py`) and the Worker
     (`normalizeProvince`/`normalizeLocality`). A shared fixture is asserted from both languages
-    (`npm run test:place`). _Follow-up:_ the alias set is seeded from PH geography, not the
-    (unreachable) real data — re-check recall against the seeded D1 on a logged-in/CI machine.
+    (`npm run test:place`). _Recall verified on real data 2026-06-21_ (`pipeline/test/recall_check.py`):
+    over the 419 real contract provinces, the aliases newly match 4 provinces / 537 contracts
+    (Davao de Oro, Cotabato, Samar name variants) that the old exact-normalize left with an empty
+    area panel. A province/locality alias table could still grow to catch more.
   - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
     `data.bettergov.ph`, 403).
 - **Phase 5 — Polish.**
