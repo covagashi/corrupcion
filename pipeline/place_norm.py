@@ -21,6 +21,10 @@ _LOCALITY_ABBREV: dict[str, str] = _ALIASES["localityAbbrev"]
 
 _WS = re.compile(r"\s+")
 _PAREN = re.compile(r"\s*\([^)]*\)")
+# DPWH puts the District Engineering Office in the province field ("Bulacan 1st DEO", "Tarlac DEO").
+# Strip the trailing office suffix to recover the province. No real province name ends in "deo",
+# so this never collides; officials never carry it, so it is a no-op on their side.
+_DEO = re.compile(r"\s+(?:\d+(?:st|nd|rd|th)\s+)?deo$")
 
 
 def normalize_place(value: object) -> str | None:
@@ -39,7 +43,7 @@ def normalize_province(value: object) -> str | None:
     base = normalize_place(value)
     if base is None:
         return None
-    s = _strip_paren(base)
+    s = _DEO.sub("", _strip_paren(base)).strip()
     if not s:
         return None
     return _PROVINCE_ALIASES.get(s, s)

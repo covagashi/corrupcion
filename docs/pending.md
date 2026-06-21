@@ -71,9 +71,12 @@ machine. The site is already live without it.
     keying the area join, in both the pipeline (`pipeline/place_norm.py`) and the Worker
     (`normalizeProvince`/`normalizeLocality`). A shared fixture is asserted from both languages
     (`npm run test:place`). _Recall verified on real data 2026-06-21_ (`pipeline/test/recall_check.py`):
-    over the 419 real contract provinces, the aliases newly match 4 provinces / 537 contracts
-    (Davao de Oro, Cotabato, Samar name variants) that the old exact-normalize left with an empty
-    area panel. A province/locality alias table could still grow to catch more.
+    over the 419 real contract provinces the canonicalizer now matches **328** (was 157), newly
+    covering **171 provinces / ~190,500 contracts** that had an empty area panel before. The dominant
+    fix was stripping the DPWH District Engineering Office suffix in the province field
+    (`"Bulacan 1st DEO"` → `bulacan`, `"Metro Manila 3rd DEO"` → `ncr`); plus the renamed-province /
+    parenthetical aliases. Contract provinces are normalized live in the Worker, so this shipped by
+    redeploy with no re-seed. Verified live (a Bulacan DEO contract now lists Bulacan's governors).
   - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
     `data.bettergov.ph`, 403).
 - **Phase 5 — Polish.**

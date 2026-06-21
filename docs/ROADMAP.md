@@ -143,8 +143,9 @@ province/locality**, not legislative district — see the deviations section abo
       (`pipeline/place_norm.py`) and the Worker (`normalizeProvince`/`normalizeLocality` in
       `$lib/officials`). A shared fixture (`pipeline/test/place-cases.json`) is asserted from both
       languages (`npm run test:place`). **Verified on real data + LIVE 2026-06-21:** seeded to remote
-      D1 (45,424 officials / 86,234 terms) and deployed; recall check shows the aliases newly match 4
-      provinces / 537 contracts (Davao de Oro, Cotabato, Samar variants) that were empty before.
+      D1 (45,424 officials / 86,234 terms) and deployed. The canonicalizer now matches 328 of 419
+      real contract provinces (was 157) — newly covering ~171 provinces / ~190,500 contracts. Biggest
+      fix: stripping the DPWH District Engineering Office suffix (`"Bulacan 1st DEO"` → `bulacan`).
 - [ ] Budget side: the GAA dataset (3.7M appropriation rows by agency/region) for an
       appropriated-vs-awarded comparison.
 

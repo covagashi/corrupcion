@@ -8,6 +8,9 @@ const LOCALITY_PREFIXES = aliases.localityPrefixes as string[];
 const LOCALITY_ABBREV = aliases.localityAbbrev as Record<string, string>;
 
 const PAREN = /\s*\([^)]*\)/g;
+// DPWH puts the District Engineering Office in the province field ("Bulacan 1st DEO", "Tarlac DEO").
+// Strip the trailing office suffix to recover the province. Mirror of _DEO in pipeline/place_norm.py.
+const DEO = /\s+(?:\d+(?:st|nd|rd|th)\s+)?deo$/;
 
 export interface OfficialTerm {
 	id: string;
@@ -39,7 +42,7 @@ function stripParen(s: string): string {
 export function normalizeProvince(value: string | null | undefined): string | null {
 	const base = normalizePlace(value);
 	if (base == null) return null;
-	const s = stripParen(base);
+	const s = stripParen(base).replace(DEO, '').trim();
 	if (!s) return null;
 	return PROVINCE_ALIASES[s] ?? s;
 }

@@ -8,6 +8,11 @@
     { "value": "Cotabato (North Cotabato)", "key": "cotabato" },
     { "value": "Cebu", "key": "cebu" },
     { "value": "  Davao   del Sur ", "key": "davao del sur" },
+    { "value": "Bulacan 1st DEO", "key": "bulacan" },
+    { "value": "Tarlac DEO", "key": "tarlac" },
+    { "value": "Metro Manila 3rd DEO", "key": "ncr" },
+    { "value": "Davao de Oro 1st DEO", "key": "davao de oro" },
+    { "value": "Region X", "key": "region x" },
     { "value": "", "key": null },
     { "value": null, "key": null }
   ],
