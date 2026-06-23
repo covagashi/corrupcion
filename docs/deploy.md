@@ -82,4 +82,4 @@ deploy → Run workflow**. After the first success the monthly cron keeps the da
   `--file` (see the load block above) — large `--file` flips to the R2 import API and hangs / 500s.
 - **Network:** `pipeline/fetch.py` downloads the bulk datasets from `huggingface.co`. CI runners and
   normal dev machines reach it fine; the Claude-Code-on-the-web sandbox does not unless the host is
-  added to the environment's egress allowlist. See [pending-data-run.md](pending-data-run.md).
+  added to the environment's egress allowlist.

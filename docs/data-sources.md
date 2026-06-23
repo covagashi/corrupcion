@@ -8,9 +8,20 @@ All data sources for the Philippine anti-corruption platform. The reference repo
 - Listing: `https://api.transparency.dpwh.gov.ph/projects?page={page}&limit={limit}` (max `limit=5000`)
 - Detail: `https://api.transparency.dpwh.gov.ph/projects/{contractId}`
 - ~247K projects total. The API sits behind Cloudflare bot protection: plain `fetch` gets blocked
-  (403/429/error 1015). The reference scraper (`dpwh-transparency-data-api-scraper-main`) works around
-  it with `curl-cffi` TLS-fingerprint rotation + proxy rotation. Prefer the bulk datasets below; hit the
-  live API only for incremental updates.
+  (403/429/error 1015). Re-verified 2026-06-23 — both `/projects` and `/filters/regions` return
+  `403` with `Cf-Mitigated: challenge` / `Server: cloudflare` (a Managed Challenge, same wall as
+  ph-check.com), so no `curl`/PowerShell client gets through without solving the JS challenge. The
+  reference scraper (`dpwh-transparency-data-api-scraper-main`) works around it with `curl-cffi`
+  TLS-fingerprint rotation + proxy rotation. Prefer the bulk datasets below; hit the live API only
+  for incremental updates.
+- API response shape (confirmed 2026-06-23 from a browser session that passed the challenge):
+  `/projects` returns `{status, code, data:{ data:[…projects…], summary, pagination }}` where
+  `summary` carries `totalProjects / completed / ongoing / notStarted / forProcurement / terminated /
+  totalBudget`, and `pagination` carries `page / limit / totalCount / totalPages / hasNext`.
+  `/filters/regions` returns `{status, code, data:[{region}×18]}`. As of that date the live API
+  reports **257,779 projects / ₱6.46 T total budget** — i.e. the bulk Parquet snapshot below
+  (248,220, 2026-06-18) lags the live data by ~9.5K projects. `location.province` carries the DEO
+  suffix (`"Pangasinan 3rd DEO"`), already handled by the DEO-stripping place normalization.
 - Bulk Parquet: `dpwh_transparency_data.parquet` — **248,220 projects**, 23 top-level columns
   (verified 2026-06-18): `contractId`, `description`, `category`, `componentCategories`, `status`,
   `budget` (double), `amountPaid` (int64), `progress` (double), `location` (struct `{province,
@@ -62,9 +73,22 @@ region}`), `contractor`, `startDate`/`completionDate` (date), `infraYear` (text)
 
 ## Company ownership
 
-- SEC Philippines company registrations — used by BetterGovPH to cross-reference contractor names with
-  incorporators/owners. No public API; data comes from SEC filings. This is the third leg of the
-  contracts ↔ politicians ↔ owners alignment.
+This is the third leg of the contracts ↔ politicians ↔ owners alignment, and the one still without a
+usable bulk source.
+
+- **SEC Philippines company registrations** — the underlying data is the SEC **General Information
+  Sheet (GIS)**, an annual filing that discloses each corporation's directors, officers and top-20
+  stockholders. There is **no public API and no bulk download**; the official portals (eSEARCH /
+  eFAST / Check-with-SEC) serve one record at a time, behind paid document requests, and the Revised
+  Corporation Code does **not authorize** automated scraping of eSEARCH. So there is no transparent,
+  auditable bulk feed to drive the owners join.
+- **ph-check.com** (investigated 2026-06-23) — a third-party aggregator that exposes a company-name
+  search. **Blocked the same way as the DPWH live API: it sits behind a Cloudflare Managed Challenge.**
+  Every request (including `https://ph-check.com/js/userdata.js`) returns `403` with
+  `Cf-Mitigated: challenge` / `Server: cloudflare`; the page shows no fetch/XHR because the content
+  only loads after a browser solves the JS challenge. Scraping it would need a challenge-solving
+  headless browser (à la `dpwh-transparency-data-api-scraper-main`), and even then it is an
+  unofficial aggregator, not a primary source — not suitable for a transparent pipeline. Parked.
 
 ## Local reference repos
 

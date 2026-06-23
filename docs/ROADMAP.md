@@ -46,9 +46,10 @@ the checklist below reads honestly.
   web sandbox cannot reach (403).
 - **Verification reality.** Legislators and the area-alignment join were verified against a **seeded
   local D1** (real Open Congress clone; a synthetic fixture for the officials join). The full
-  PhilGEPS / DPWH / officials data runs that need `huggingface.co` are **deferred** to a
-  logged-in/CI machine — sandbox egress blocks HF. See [pending.md](pending.md) /
-  [pending-data-run.md](pending-data-run.md).
+  PhilGEPS / DPWH / officials data runs (which need `huggingface.co`) were **completed on a
+  logged-in machine** — seeded to remote D1 and deployed (2026-06-18 / 2026-06-21). See
+  [pending.md](pending.md). (The Claude-Code-on-the-web sandbox can't do these runs itself — its
+  egress blocks HF.)
 
 ## Phase 0 — Base ✅ (done)
 
@@ -102,19 +103,18 @@ Full deploy instructions (local + CI) in [deploy.md](deploy.md).
 - [x] DPWH Infrastructure (`dpwh_transparency_data.parquet`, 248,220 projects) into the pipeline.
       Schema verified; mapped to `source='dpwh'` rows with the `OVER_BUDGET` flag (amount paid >
       approved budget). See [methodology.md](methodology.md#phase-3b--dpwh-infrastructure-projects-implemented).
-      (The Hugging Face download path in `fetch.py` still needs a live confirmation — see
-      [pending-data-run.md](pending-data-run.md).)
+      Run end-to-end and seeded to D1 (248,220 projects); the Hugging Face download path in `fetch.py`
+      is confirmed working.
 - [x] Unified search across all contracts (server-side, returns small HTML). The list spans both
       sources, with a Flood Control / PhilGEPS source filter; search matches contractor, description,
       district, procuring entity, province and category; the list and detail pages render
       source-appropriate fields (ceiling/ratio for flood control, agency/category/award year for
       PhilGEPS).
 
-> **Not yet run:** the PhilGEPS pipeline + metric code and the front end are done and type-checked,
-> but the end-to-end data run (download `philgeps.parquet` → `transform.py` → seed D1) could not
-> execute in the web sandbox (egress blocks `huggingface.co`). Exact remaining steps and how to
-> finish them (CI / egress allowlist / logged-in machine) are in
-> [pending-data-run.md](pending-data-run.md).
+> **Run 2026-06-18:** the PhilGEPS pipeline + metric code and the front end were run end-to-end on a
+> logged-in machine (download `philgeps.parquet` → `transform.py` → seed D1), then seeded to remote
+> D1 and deployed. See [pending.md](pending.md). (The web sandbox can't do this run itself — its
+> egress blocks `huggingface.co`; use a logged-in/CI machine, per [deploy.md](deploy.md).)
 
 ## Phase 4 — Alignment (contracts ↔ politicians ↔ owners) — partial
 
@@ -134,7 +134,10 @@ province/locality**, not legislative district — see the deviations section abo
       it is best-effort where names differ between sources. Code type-checked + join verified on a
       local fixture; the real data run (HF parquet) is deferred (sandbox blocks huggingface.co).
 - [ ] Company owners: SEC records; link contractors to incorporators/owners — no public API / no
-      reachable bulk source yet.
+      reachable bulk source yet. The data is the SEC General Information Sheet
+      (directors/officers/top-20 stockholders); scraping eSEARCH is not authorized. The aggregator
+      `ph-check.com` is blocked behind a Cloudflare Managed Challenge (same wall as the DPWH live
+      API) — see [data-sources.md](data-sources.md#company-ownership). Parked.
 - [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
       `data.bettergov.ph`, which the web sandbox cannot reach (403).
 - [x] Stronger place-name matching: a shared `src/lib/place-aliases.json` drives province aliases

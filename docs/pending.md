@@ -1,7 +1,7 @@
 # Pending work
 
 Single place that tracks what is **not** done yet on this branch. Phase-level tracking lives in
-[ROADMAP.md](ROADMAP.md); the data-run details are in [pending-data-run.md](pending-data-run.md).
+[ROADMAP.md](ROADMAP.md).
 
 ## 1. Run the pipeline against the real data — DONE locally 2026-06-18
 
@@ -22,8 +22,8 @@ in-window PhilGEPS rows → 42,229 monitored-band contracts + 248,220 DPWH proje
   all return 200. (This machine ships Node 20.17.0, below the `engine-strict` ≥22 floor some deps
   need; a portable Node 22 was used just for this.)
 - **Remote D1 seeded + deployed 2026-06-18.** Same run was pushed to production from the logged-in
-  machine (see item 2). The Claude-Code-on-the-web sandbox remains blocked on `huggingface.co`
-  egress — see [pending-data-run.md](pending-data-run.md).
+  machine (see item 2). (The Claude-Code-on-the-web sandbox cannot do this run itself — its egress
+  blocks `huggingface.co` — so it must run on a logged-in/CI machine.)
 
 ## 2. One-time deploy setup — DONE 2026-06-18 (CI token still optional)
 
@@ -80,8 +80,15 @@ the Cloudflare dashboard (Edit Cloudflare Workers template + `D1 · Edit`) and `
     (`"Bulacan 1st DEO"` → `bulacan`, `"Metro Manila 3rd DEO"` → `ncr`); plus the renamed-province /
     parenthetical aliases. Contract provinces are normalized live in the Worker, so this shipped by
     redeploy with no re-seed. Verified live (a Bulacan DEO contract now lists Bulacan's governors).
-  - _Still blocked:_ SEC company ownership (no public API); Ateneo dynasties dataset (on
-    `data.bettergov.ph`, 403).
+  - _Still blocked:_ SEC company ownership and the Ateneo dynasties dataset.
+    - **SEC owners:** the data is the SEC General Information Sheet (directors/officers/top-20
+      stockholders) — no public API, no bulk download, and scraping eSEARCH is not authorized.
+      `ph-check.com` (a third-party aggregator) was investigated 2026-06-23 and is **blocked behind a
+      Cloudflare Managed Challenge** — the same wall as the DPWH live API: every request (incl.
+      `/js/userdata.js`) returns `403` with `Cf-Mitigated: challenge`. Would need a challenge-solving
+      headless browser, and it is only an unofficial aggregator anyway. See
+      [data-sources.md](data-sources.md#company-ownership). Parked.
+    - **Dynasties:** Ateneo Policy Center dataset on `data.bettergov.ph` returns `403`.
 - **Phase 5 — Polish.**
   - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
     moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`
