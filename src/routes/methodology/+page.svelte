@@ -113,10 +113,49 @@
 		</p>
 	</section>
 
+	<section class="mt-6">
+		<h2 class="text-base font-semibold text-slate-900">
+			Contractor license and the owner's surname
+		</h2>
+		<p class="mt-2 text-sm text-slate-600">
+			For each contract we also look up the contractor against the public
+			<strong>PCAB</strong> (Philippine Contractors Accreditation Board) license register. If the
+			firm has a current license we show its number, category and validity, and the
+			<strong>disclosed owner</strong> (the AMO — Authorized Managing Officer). If the firm appears
+			in PCAB's <strong>suspended / revoked</strong> list, a red badge flags it — a contractor whose
+			license was revoked should not have won new government work after that date. This is shown as
+			context alongside the contract, and is <strong>not added to the score</strong> (it is a separate,
+			third-party registry check, not a statistic we compute).
+		</p>
+		<p class="mt-2 text-sm text-slate-600">
+			We also take the AMO surname and check whether any official in the contract's area — or any <a
+				href={resolve('/legislators')}
+				class="text-blue-700 underline">senator or representative</a
+			>
+			nationally — shares it. A surname overlap is <strong>a signal, not proof</strong>: Philippine
+			surnames are common, and the same last name is no indication two people are related or
+			coordinated. It just marks a place worth a closer look by a journalist or citizen, exactly the
+			way the area-officials panel does.
+		</p>
+	</section>
+
+	<section class="mt-6">
+		<h2 class="text-base font-semibold text-slate-900">Political dynasty context</h2>
+		<p class="mt-2 text-sm text-slate-600">
+			For contracts in a province we also show the <strong>fat-dynasty share</strong> published by the
+			Ateneo Policy Center for the closest election year to that contract (1992..2022, every three years),
+			next to the national average that year. "Fat dynasty" is Ateneo's term for elected offices that
+			stay within the same family across terms. A high share is a structural condition of the area's politics
+			— useful context for reading why a contractor wins repeatedly in a place, but not by itself proof
+			of anything about a specific contract.
+		</p>
+	</section>
+
 	<footer class="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-500">
 		Source: DPWH Flood Control Projects + PhilGEPS awarded contracts + DPWH infrastructure
-		transparency data + Open Congress + Raw Philippine Data officials (via BetterGov). Our
-		methodology is public and adapts the approach of contractes.cat to Philippine data.
+		transparency data + Open Congress + Raw Philippine Data officials (via BetterGov) + PCAB
+		licenses + Ateneo Policy Center Political Dynasties Dataset. Our methodology is public and
+		adapts the approach of contractes.cat to Philippine data.
 		<a href={resolve('/threshold-splitting')} class="text-blue-700 underline"
 			>Below-threshold pricing</a
 		>.

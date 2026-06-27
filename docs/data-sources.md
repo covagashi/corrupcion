@@ -73,15 +73,28 @@ region}`), `contractor`, `startDate`/`completionDate` (date), `infraYear` (text)
 
 ## Company ownership
 
-This is the third leg of the contracts ↔ politicians ↔ owners alignment, and the one still without a
-usable bulk source.
+This is the third leg of the contracts ↔ politicians ↔ owners alignment. SEC remains out of reach,
+but the **disclosed owner of each PCAB-licensed firm (the AMO)** now covers the "owners" leg.
 
+- **PCAB — Philippine Contractors Accreditation Board** is the live, public source. Its license
+  verification pages (`https://pcabgovph.com/verify/`) are jqGrid-backed by phpGrid and reachable in
+  bulk via `/phpGrid/data.php?dt=json&gn={Licenses|SuspendedLicenses}`. Two grids are ingested by
+  `pipeline/pcab.py` (verified 2026-06-27):
+  - `gn=Licenses` — ~18,141 currently-valid regular licenses. Columns: `id, CompanyName, LicenseNum,
+    AMO` (Authorized Managing Officer — the disclosed firm owner), `Category` (AAAA / AAA / AA / A /
+    B / C / D / E), `ValidTo`, `GovReg` (1 = authorized for government infrastructure projects).
+  - `gn=SuspendedLicenses` — the (small) revoked/suspended list. Columns: `id, CompanyName,
+    LicenseNum, Status, FromDate, ToDate, Reason`. A contractor in here is the strongest ownership-
+    linked signal the site surfaces.
+- **phpGrid session warmup:** every `data.php` call returns 200 with a `PHPGRID_ERROR` body *unless*
+  you first GET `/verify/` to seed the session cookie. `pipeline/pcab.py` does that warmup, then
+  pages at 100 rows/page (~0.4 req/sec self-throttled with an identifying UA).
 - **SEC Philippines company registrations** — the underlying data is the SEC **General Information
   Sheet (GIS)**, an annual filing that discloses each corporation's directors, officers and top-20
   stockholders. There is **no public API and no bulk download**; the official portals (eSEARCH /
   eFAST / Check-with-SEC) serve one record at a time, behind paid document requests, and the Revised
-  Corporation Code does **not authorize** automated scraping of eSEARCH. So there is no transparent,
-  auditable bulk feed to drive the owners join.
+  Corporation Code does **not authorize** automated scraping of eSEARCH. So the SEC GIS itself has
+  no transparent, auditable bulk feed; PCAB's disclosed AMO is the "owners" leg instead.
 - **ph-check.com** (investigated 2026-06-23) — a third-party aggregator that exposes a company-name
   search. **Blocked the same way as the DPWH live API: it sits behind a Cloudflare Managed Challenge.**
   Every request (including `https://ph-check.com/js/userdata.js`) returns `403` with
@@ -89,6 +102,18 @@ usable bulk source.
   only loads after a browser solves the JS challenge. Scraping it would need a challenge-solving
   headless browser (à la `dpwh-transparency-data-api-scraper-main`), and even then it is an
   unofficial aggregator, not a primary source — not suitable for a transparent pipeline. Parked.
+
+### Matching PCAB to contracts and officials (Phase 4 alignment)
+
+`pipeline/pcab.py` writes two normalized columns on each PCAB license row:
+- `contractor_key` — the firm name uppercased, alphanumerics-only, single-spaced (mirrored by
+  `normalizeCompanyKey` in `$lib/server/companies.ts`). The contract detail page matches
+  `contracts.contractor` to `pcab_licenses.contractor_key` by equality.
+- `owner_surname` — the AMO surname (last token, generational suffixes and particles dropped).
+  The contract detail page runs a Phase 4 surname-overlap query (`getSurnameOverlaps` in the same
+  server file): officials in the contract's province with a matching `full_name LIKE '% <surname>%'`,
+  plus any national legislator with `last_name LIKE '<surname>%'`. The methodology page states this
+  is a signal, not proof.
 
 ## Local reference repos
 

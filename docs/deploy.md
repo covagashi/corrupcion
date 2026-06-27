@@ -30,16 +30,20 @@ Commit that change, then `npm run gen` (regenerates Worker types after a `wrangl
 ## Option A — deploy manually (logged-in machine)
 
 ```sh
-# pipeline (Python) -> out/contracts.sql + out/congress.sql
+# pipeline (Python) -> out/contracts.sql + out/congress.sql + out/officials.sql + out/pcab.sql +
+#                     out/dynasties.sql
 python pipeline/fetch.py        # also clones open-congress-data into pipeline/sources/
 python pipeline/transform.py    # -> out/contracts.sql
 python pipeline/congress.py     # -> out/congress.sql   (legislators directory)
 python pipeline/officials.py    # -> out/officials.sql  (public officials + area alignment)
+python pipeline/pcab.py         # -> out/pcab.sql       (PCAB licenses + suspended/revoked)
+python pipeline/dynasties.py    # -> out/dynasties.sql  (Ateneo dynasty politicians + province shares)
 
 # load the remote D1 (schema first, then rows) and ship. The big dumps (contracts ~122 MB,
-# officials ~21 MB) MUST be chunked — a single --file of that size flips wrangler to the R2-upload
-# import API, which hangs / 500s. split_sql.py cuts ~5 MB statement-aligned chunks that seed
-# reliably via the direct batched API. congress.sql / schema.sql are small enough for direct --file.
+# officials ~21 MB, dynasties ~31 MB) MUST be chunked — a single --file of that size flips wrangler
+# to the R2-upload import API, which hangs / 500s. split_sql.py cuts ~5 MB statement-aligned chunks
+# that seed reliably via the direct batched API. congress.sql / pcab.sql / schema.sql are small
+# enough for direct --file.
 npx wrangler d1 execute corrupcion-db --remote --file=db/schema.sql --yes
 
 python pipeline/split_sql.py pipeline/out/contracts.sql pipeline/out/chunks
@@ -52,6 +56,12 @@ python pipeline/split_sql.py pipeline/out/officials.sql pipeline/out/chunks-offi
 for f in pipeline/out/chunks-officials/chunk_*.sql; do
   npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes; done
 
+npx wrangler d1 execute corrupcion-db --remote --file=pipeline/out/pcab.sql --yes
+
+python pipeline/split_sql.py pipeline/out/dynasties.sql pipeline/out/chunks-dynasties
+for f in pipeline/out/chunks-dynasties/chunk_*.sql; do
+  npx wrangler d1 execute corrupcion-db --remote --file="$f" --yes; done
+
 npm run build && npx wrangler deploy
 ```
 
@@ -59,6 +69,13 @@ npm run build && npx wrangler deploy
 > need to add the Phase 4 officials/legislators tables, create just those (skip the contracts
 > drop/recreate) and seed `congress.sql` + chunked `officials.sql`. This is how the 2026-06-21
 > deploy was done so the 300K already-seeded contracts weren't touched.
+>
+> For the **2026-06-27 follow-up** (PCAB + Ateneo dynasties): the schema adds `pcab_licenses`,
+> `pcab_suspended`, `dynasty_politicians`, `dynasty_shares` (all `DROP TABLE IF EXISTS` /
+> `DELETE FROM`, so re-applying schema is safe for the rest). `pcab.sql` is small enough for a
+> direct `--file`; `dynasties.sql` is ~31 MB so chunk it like `officials.sql`. No `fetch.py` change
+> needed for either (PCAB is scraped in-process by `pipeline/pcab.py`; the Ateneo xlsx ships in
+> `docs/`).
 
 ## Option B — deploy from CI (no local Node)
 

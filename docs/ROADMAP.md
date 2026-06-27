@@ -133,13 +133,23 @@ province/locality**, not legislative district — see the deviations section abo
       on normalized province/locality names (`normalize_place` mirrored in `$lib/officials.ts`), so
       it is best-effort where names differ between sources. Code type-checked + join verified on a
       local fixture; the real data run (HF parquet) is deferred (sandbox blocks huggingface.co).
-- [ ] Company owners: SEC records; link contractors to incorporators/owners — no public API / no
-      reachable bulk source yet. The data is the SEC General Information Sheet
-      (directors/officers/top-20 stockholders); scraping eSEARCH is not authorized. The aggregator
-      `ph-check.com` is blocked behind a Cloudflare Managed Challenge (same wall as the DPWH live
-      API) — see [data-sources.md](data-sources.md#company-ownership). Parked.
-- [ ] Political-dynasty dataset (Ateneo Policy Center) for clan context — lives on
-      `data.bettergov.ph`, which the web sandbox cannot reach (403).
+- [~] Company owners: SEC records remain out of reach (no public API / no bulk — eSEARCH is not
+      authorized to scrape; `ph-check.com` is behind a Cloudflare Managed Challenge). **But the
+      "owners" leg now has a working source via PCAB** — see Phase 5 / `docs/data-sources.md`.
+      `pipeline/pcab.py` ingests the public PCAB `/verify/` jqGrid (Regular Licenses 18K firms +
+      Suspended/Revoked) into `pcab_licenses` + `pcab_suspended`; each license carries the AMO
+      (disclosed firm owner). The contract detail page shows the panel + a visible badge when the
+      contractor matches a suspended/revoked row, and a "surname overlap with officials/legislators"
+      panel that runs Phase 4's surname-overlap alignment using the AMO.
+- [x] Political-dynasty dataset (Ateneo Policy Center) — DONE in code 2026-06-27. The 2022 Update
+      xlsx lives locally in `docs/` (the live copy on `data.bettergov.ph` is 403 from the sandbox).
+      `pipeline/dynasties.py` ingests it into `dynasty_politicians` (207,599 rows, normalized
+      province/locality keys + surname + `is_fat`) and `dynasty_shares` (81 provinces × 11 election
+      years). The contract detail page now shows a "Dynasty context in <province>" panel with the
+      fat-dynasty share at the closest election year, the national average, and the sample counts.
+      Verified end-to-end on the local D1 (seeded 207,599 / 871 rows; Bulacan 2019 — share, 27.6%
+      national avg, 120/265 fat — returns correctly). Remote seed + deploy still pending the same
+      logged-in-machine run as PCAB.
 - [x] Stronger place-name matching: a shared `src/lib/place-aliases.json` drives province aliases
       (NCR/Metro Manila, Compostela Valley→Davao de Oro, parenthetical disambiguation, …) + locality
       rules ("City of X"→x, drop parentheticals, Sto./Sta./Gen. expansion) in both the pipeline

@@ -97,6 +97,169 @@
 		</dl>
 	</section>
 
+	{#if data.companyInfo.license || data.companyInfo.suspended}
+		<section class="mt-6">
+			<h2 class="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+				Contractor license (PCAB)
+			</h2>
+			{#if data.companyInfo.suspended}
+				{@const s = data.companyInfo.suspended}
+				<div class="mt-2 rounded-xl border border-red-200 bg-red-50 p-4">
+					<div class="flex items-center gap-2">
+						<span class="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white uppercase"
+							>{s.status ?? 'License suspended'}</span
+						>
+						<span class="text-sm font-semibold text-red-900">PCAB license no longer valid</span>
+					</div>
+					<p class="mt-2 text-sm text-red-800">
+						<strong>{s.contractor_name}</strong>
+						{#if s.valid_from}
+							— from {s.valid_from}{#if s.valid_to}
+								to {s.valid_to}{/if}
+						{/if}
+						{#if s.reason}
+							<br />Reason: {s.reason}
+						{/if}
+					</p>
+					<p class="mt-2 text-xs text-red-700">
+						A contractor whose license was suspended or revoked by PCAB should not have won new
+						government contracts after that date. Worth checking against the contract's award year.
+					</p>
+				</div>
+			{:else if data.companyInfo.license}
+				{@const l = data.companyInfo.license}
+				<dl class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+					<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+						<dt class="text-slate-500">PCAB license no.</dt>
+						<dd class="text-right font-medium text-slate-900">{l.license_no ?? '—'}</dd>
+					</div>
+					<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+						<dt class="text-slate-500">License category</dt>
+						<dd class="text-right font-medium text-slate-900">{l.category ?? '—'}</dd>
+					</div>
+					<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+						<dt class="text-slate-500">Valid to</dt>
+						<dd class="text-right font-medium text-slate-900">{l.valid_to ?? '—'}</dd>
+					</div>
+					{#if l.amo_owner}
+						<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+							<dt class="text-slate-500">Disclosed owner (AMO)</dt>
+							<dd class="text-right font-medium text-slate-900">{l.amo_owner}</dd>
+						</div>
+					{/if}
+					{#if l.gov_registered !== null}
+						<div class="flex justify-between gap-4 px-4 py-2.5 text-sm">
+							<dt class="text-slate-500">Registered for gov't projects</dt>
+							<dd class="text-right font-medium text-slate-900">
+								{l.gov_registered === 1 ? 'Yes' : 'No'}
+							</dd>
+						</div>
+					{/if}
+				</dl>
+				<p class="mt-1 text-xs text-slate-500">
+					Source: Philippine Contractors Accreditation Board — public license verification.
+				</p>
+			{/if}
+		</section>
+	{:else if c.contractor}
+		<p class="mt-6 text-xs text-slate-400">
+			No PCAB license record matched this contractor in our snapshot — the firm may be unlicensed,
+			or its name in the contract does not match the PCAB record.
+		</p>
+	{/if}
+
+	{#if data.surnameOverlaps.length}
+		<section class="mt-6">
+			<h2 class="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+				Surname overlap with officials
+			</h2>
+			<p class="mt-1 text-xs text-slate-500">
+				The disclosed owner of this contractor's PCAB license
+				{#if data.companyInfo.license?.amo_owner}
+					({data.companyInfo.license.amo_owner}){/if}
+				shares a surname with the {data.surnameOverlaps.length}
+				official{data.surnameOverlaps.length === 1 ? '' : 's'} listed below. This is a
+				<strong>signal, not proof</strong> — surnames are common; it just marks a connection worth a closer
+				look.
+			</p>
+			<ul class="mt-3 divide-y divide-slate-100 rounded-xl border border-amber-200 bg-amber-50">
+				{#each data.surnameOverlaps as o (o.scope + o.person_id)}
+					<li>
+						<a
+							href={resolve(o.scope === 'legislator' ? '/legislator/[id]' : '/official/[id]', {
+								id: o.person_id
+							})}
+							class="flex items-center justify-between gap-3 p-3 active:bg-amber-100"
+						>
+							<span class="min-w-0">
+								<span class="block truncate text-sm font-semibold text-slate-900"
+									>{o.full_name ?? 'Unknown'}</span
+								>
+								<span class="mt-0.5 block text-xs text-slate-600">
+									{#if o.scope === 'legislator'}
+										{o.roles ?? 'Legislator'}
+										{#if o.year}
+											· latest {o.year}{/if}
+									{:else}
+										{o.position ?? '—'}{#if o.locality}
+											of {o.locality}{/if}
+										{#if o.party}
+											· {o.party}{/if}
+										{#if o.year}
+											· {o.year}{/if}
+									{/if}
+								</span>
+							</span>
+							<span class="shrink-0 text-xs font-medium text-amber-700"
+								>{o.scope === 'legislator' ? 'national' : 'local'}</span
+							>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
+	{#if data.dynastyContext && data.dynastyContext.share}
+		{@const sh = data.dynastyContext.share}
+		{@const d = data.dynastyContext}
+		<section class="mt-6">
+			<h2 class="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+				Dynasty context in {sh.province}
+			</h2>
+			<p class="mt-1 text-xs text-slate-500">
+				Share of local politicians in {sh.province} who belong to a "fat" political dynasty (Ateneo Policy
+				Center), at the closest election year to this contract.
+			</p>
+			<div class="mt-2 rounded-xl border border-slate-200 bg-white p-4">
+				<div class="flex items-baseline justify-between gap-3">
+					<span class="text-2xl font-bold text-slate-900">{Math.round(sh.share)}%</span>
+					<span class="text-xs text-slate-500">election year {sh.year}</span>
+				</div>
+				{#if d.nationalAverage !== null}
+					<p class="mt-2 text-sm text-slate-600">
+						{#if sh.share > d.nationalAverage}
+							<strong>Above</strong> the national average ({Math.round(d.nationalAverage)}%) for {sh.year}.
+						{:else}
+							<strong>Below</strong> the national average ({Math.round(d.nationalAverage)}%) for {sh.year}.
+						{/if}
+					</p>
+				{/if}
+				{#if d.totalCount > 0}
+					<p class="mt-2 text-xs text-slate-500">
+						Sample: {d.fatCount} of {d.totalCount} local politicians in the Ateneo dataset that year were
+						classified as members of a fat dynasty.
+					</p>
+				{/if}
+				<p class="mt-2 text-xs text-slate-500">
+					A high fat-dynasty share means political offices tend to stay within the same families —
+					relevant context for reading the contract, not in itself a sign of fraud in this specific
+					contract.
+				</p>
+			</div>
+		</section>
+	{/if}
+
 	{#if data.districtStat}
 		{@const s = data.districtStat}
 		<section class="mt-6">

@@ -80,7 +80,7 @@ the Cloudflare dashboard (Edit Cloudflare Workers template + `D1 · Edit`) and `
     (`"Bulacan 1st DEO"` → `bulacan`, `"Metro Manila 3rd DEO"` → `ncr`); plus the renamed-province /
     parenthetical aliases. Contract provinces are normalized live in the Worker, so this shipped by
     redeploy with no re-seed. Verified live (a Bulacan DEO contract now lists Bulacan's governors).
-  - _Still blocked:_ SEC company ownership and the Ateneo dynasties dataset.
+  - _Still blocked:_ the SEC company-ownership source (GIS) remains out of reach.
     - **SEC owners:** the data is the SEC General Information Sheet (directors/officers/top-20
       stockholders) — no public API, no bulk download, and scraping eSEARCH is not authorized.
       `ph-check.com` (a third-party aggregator) was investigated 2026-06-23 and is **blocked behind a
@@ -88,7 +88,34 @@ the Cloudflare dashboard (Edit Cloudflare Workers template + `D1 · Edit`) and `
       `/js/userdata.js`) returns `403` with `Cf-Mitigated: challenge`. Would need a challenge-solving
       headless browser, and it is only an unofficial aggregator anyway. See
       [data-sources.md](data-sources.md#company-ownership). Parked.
-    - **Dynasties:** Ateneo Policy Center dataset on `data.bettergov.ph` returns `403`.
+  - _Owners leg — DONE in code (pipeline written 2026-06-27), not yet seeded._ Found a public bulk
+    source that the prior "blocked" verdict missed: the **PCAB** license verification pages at
+    `https://pcabgovph.com/verify/` are backed by phpGrid and ingestible via
+    `/phpGrid/data.php?dt=json&gn={Licenses|SuspendedLicenses}`. `pipeline/pcab.py` warms up the
+    `/verify/` session cookie, pages both grids (Regular ~18K rows + Suspended ~25) and emits
+    `out/pcab.sql` populating `pcab_licenses` + `pcab_suspended` (DB binding + tables added to
+    `db/schema.sql`). The contract detail page (`/contract/[id]`) now shows a "Contractor license
+    (PCAB)" panel with the AMO (disclosed firm owner), plus a red badge if the contractor matches a
+    suspended/revoked row, and a "Surname overlap with officials" panel that runs Phase 4's
+    surname-overlap alignment using the AMO surname. The methodology page documents both. The PCAB
+    run itself + remote D1 seed still need to be executed on a logged-in machine (the sandbox's
+    `Invoke-WebRequest` to `data.php` *without* the warmup cookie returns `PHPGRID_ERROR`, but the
+    script does the warmup so it works once it actually runs there).
+  - _Dynasties leg — DONE in code (pipeline written 2026-06-27), not yet seeded._ The Ateneo Policy
+    Center Political Dynasties Dataset (2022 Update) xlsx lives locally in `docs/` (the live copy on
+    `data.bettergov.ph` is 403 from the sandbox). `pipeline/dynasties.py` ingests it into
+    `dynasty_politicians` (207,599 rows: surname + first/last name + party + region/province +
+    normalized province/locality keys + position + year + PSGC_Province + `is_fat` flag) and
+    `dynasty_shares` (81 provinces × 11 election years 1992–2022, long form: province_key + year +
+    share %). `src/lib/server/dynasties.ts` exposes `getDynastyContext(province, year)` — the share
+    at the closest election year, the national average that year, and the fat-vs-total sample counts
+    — and the contract detail page shows a "Dynasty context in <province>" panel. Verified
+    end-to-end on the local D1 (seeded 207,599 politicians / 871 shares; query for Bulacan 2019
+    returns share, 27.6% national avg, 120 fat out of 265 — exactly what the panel renders). Remote
+    seed + deploy still pending the same logged-in-machine run as PCAB below.
+  - _Remaining pending (Phase 4):_ the **GAA** budget dataset (`bettergovph/gaa` on HF, 4.54M
+    appropriation rows by agency/region) for the appropriated-vs-awarded comparison — last data leg
+    of Phase 4 not yet started.
 - **Phase 5 — Polish.**
   - _Landing page + "find your area" browse._ **DONE** — `/` is a plain-language landing; the list
     moved to `/contracts`; `/areas` groups by province and links into `/contracts?province=…`
